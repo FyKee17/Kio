@@ -2,10 +2,23 @@ export const TILE = 32;
 export const WIDTH = 1280;
 export const HEIGHT = 720;
 
+// Escala de renderização: a lógica do jogo é sempre 1280x720, mas o canvas é
+// desenhado na resolução real da tela (até 2x) para ficar nítido, sem serrilhado.
+// ?res=1 força a resolução base.
+export const RES = (() => {
+  if (typeof window === 'undefined') return 1;
+  const forced = Number(new URLSearchParams(window.location.search).get('res'));
+  if (forced > 0) return forced;
+  const dpr = window.devicePixelRatio || 1;
+  const fit = Math.min(window.innerWidth / WIDTH, window.innerHeight / HEIGHT) * dpr;
+  return Math.max(1, Math.min(2, Math.round(fit * 4) / 4));
+})();
+
 // Movimento. Pulo simples ≈ 5 blocos; com pulo duplo ≈ 9; com Passo Etéreo cruza ~11 de vão.
 export const PHYS = {
   gravity: 2100,
-  runSpeed: 290,
+  walkSpeed: 175, // sem Shift o Kio anda
+  runSpeed: 290, // segurando Shift ele corre
   accel: 3400,
   airAccel: 2600,
   decel: 3800,

@@ -135,7 +135,8 @@ export class Player {
         let accel;
         if (dir !== 0) accel = onGround ? PHYS.accel : PHYS.airAccel;
         else accel = onGround ? PHYS.decel : PHYS.airAccel * 0.6;
-        b.setVelocityX(approach(b.velocity.x, dir * PHYS.runSpeed, accel * dt));
+        const speed = c.held.run ? PHYS.runSpeed : PHYS.walkSpeed;
+        b.setVelocityX(approach(b.velocity.x, dir * speed, accel * dt));
       }
       if (dir !== 0 && !this.attack) this.facing = dir;
 
@@ -152,6 +153,7 @@ export class Player {
         this.coyote = 0;
         this.jumping = true;
         this.squash(0.82, 1.18);
+        this.scene.onPlayerJump?.(this);
       } else if (control && c.pressed.jump && !onGround && this.coyote <= 0 && abilities.doubleJump && !this.airJumpUsed) {
         b.setVelocityY(-PHYS.doubleJumpVelocity);
         this.airJumpUsed = true;

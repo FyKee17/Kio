@@ -4,10 +4,14 @@ import { BODY_FONT } from '../fonts.js';
 import { MAP, AREAS, NPCS, TABLETS, ABILITIES } from '../data/world.js';
 import { Controls } from '../controls.js';
 import { Player } from '../objects/Player.js';
-import { Boss, ENEMY_TYPES } from '../objects/Enemies.js';
+import { ENEMY_TYPES } from '../objects/Enemies.js';
+import { Ender } from '../objects/Ender.js';
 import { LAYER_H } from '../gfx/backdrop.js';
 import { FEET } from '../data/anims.js';
 import { writeSave, encodeBits, decodeBits } from '../save.js';
+import { setupCamera, FIXED_X, FIXED_Y } from '../view.js';
+import { sfx } from '../audio/sfx.js';
+import { playMusic } from '../audio/music.js';
 
 const REVEAL_RADIUS = 13;
 const INTERACT_RANGE = 70;
@@ -46,6 +50,9 @@ export class WorldScene extends Phaser.Scene {
     this.interactables = [];
     this.deposits = [];
     this.gates = [];
+    // arena do Ender (em pixels): entre o portão e a parede direita, do teto ao chão
+    this.arena = { left: 106 * TILE, right: 137 * TILE, top: 22 * TILE, floor: 41 * TILE };
+    this.bossFx = this.physics.add.group();
     this.createEntities();
 
     const spawn = this.spawnPoint();
@@ -59,7 +66,21 @@ export class WorldScene extends Phaser.Scene {
     );
     this.gateGroup = this.physics.add.staticGroup(this.gates.map((g) => g.img));
     this.physics.add.collider(this.player.phys, this.gateGroup, null, () => this.fightingBoss);
-    this.physics.add.collider(this.enemies, this.layer, null, (e, tile) => tile.index !== 1 || e.body.velocity.y >= 0);
+    this.physics.add.collider(this.enemies, this.layer, null, (e, tile) => tile.index !== 1 || (e.body.velocity.y >= 0 && !e.ignorePlatforms));
+    // choques andam pelo chão e pelas plataformas; orbes somem ao tocar a parede
+    this.physics.add.collider(
+      this.bossFx,
+      this.layer,
+      (h) => {
+        if (h.getData('kind') === 'orb' || h.body.blocked.left || h.body.blocked.right) this.popBossFx(h);
+      },
+      (h, tile) => h.body?.enable && (tile.index !== 1 || h.body.velocity.y >= 0),
+    );
+    this.physics.add.collider(this.bossFx, this.gateGroup, (h) => this.popBossFx(h), () => this.fightingBoss);
+    this.physics.add.overlap(this.player.phys, this.bossFx, (p, h) => {
+      this.damagePlayer(h.x);
+      if (h.getData('kind') === 'orb') this.popBossFx(h);
+    });
     this.physics.add.collider(this.enemies, this.gateGroup, null, () => this.fightingBoss);
     this.physics.add.collider(this.pickups, this.layer);
     this.physics.add.collider(this.hazards, this.layer, (h) => {
@@ -69,13 +90,14 @@ export class WorldScene extends Phaser.Scene {
     this.physics.add.overlap(this.player.phys, this.hazards, (p, h) => this.damagePlayer(h.x));
     this.physics.add.overlap(this.player.phys, this.pickups, (p, g) => this.collectPickup(g));
 
-    const cam = this.cameras.main;
+    const cam = setupCamera(this, { world: true });
     cam.setBounds(0, 0, this.worldW, this.worldH);
     cam.startFollow(this.player.phys, true, 0.1, 0.1);
     cam.setRoundPixels(false);
     this.lookX = 0;
     this.lookY = 0;
     cam.fadeIn(700, 7, 11, 24);
+    playMusic('world');
 
     this.scene.launch('HUD');
     this.hud = this.scene.get('HUD');
@@ -139,17 +161,19 @@ export class WorldScene extends Phaser.Scene {
   }
 
   createBackdrop() {
-    const mk = (key, depth) =>
-      this.add.tileSprite(WIDTH / 2, HEIGHT / 2, WIDTH, HEIGHT, key).setScrollFactor(0).setDepth(depth);
-    this.add.image(WIDTH / 2, HEIGHT / 2, 'bg-sky').setScrollFactor(0).setDepth(-100);
-    this.rays = this.add.image(WIDTH / 2, HEIGHT / 2, 'bg-rays').setScrollFactor(0).setDepth(-95).setBlendMode(Phaser.BlendModes.ADD);
+    // presos à tela: posição lógica + deslocamento do zoom (ver view.js)
+    const cx = WIDTH / 2 + FIXED_X;
+    const cy = HEIGHT / 2 + FIXED_Y;
+    const mk = (key, depth) => this.add.tileSprite(cx, cy, WIDTH, HEIGHT, key).setScrollFactor(0).setDepth(depth);
+    this.add.image(cx, cy, 'bg-sky').setScrollFactor(0).setDepth(-100);
+    this.rays = this.add.image(cx, cy, 'bg-rays').setScrollFactor(0).setDepth(-95).setBlendMode(Phaser.BlendModes.ADD);
     this.tweens.add({ targets: this.rays, alpha: 0.45, duration: 4200, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
     this.layers = [
       { s: mk('bg-far', -90), fx: 0.12, fy: 1 },
       { s: mk('bg-fog', -85).setAlpha(0.8), fx: 0.25, fy: 0, drift: 6 },
       { s: mk('bg-mid', -80), fx: 0.3, fy: 1 },
     ];
-    this.darkness = this.add.rectangle(WIDTH / 2, HEIGHT / 2, WIDTH, HEIGHT, 0x03050c, 0).setScrollFactor(0).setDepth(-70);
+    this.darkness = this.add.rectangle(cx, cy, WIDTH, HEIGHT, 0x03050c, 0).setScrollFactor(0).setDepth(-70);
   }
 
   createTerrainArt() {
@@ -204,9 +228,8 @@ export class WorldScene extends Phaser.Scene {
           const E = ENEMY_TYPES[ch];
           this.enemies.add(new E(this, cx, ch === 'f' ? floor - TILE / 2 : floor));
         } else if (ch === 'K' && !st.bossDefeated) {
-          this.boss = new Boss(this, cx, floor);
+          this.boss = new Ender(this, cx, floor, this.arena);
           this.enemies.add(this.boss);
-          this.boss.body.setAllowGravity(true);
         } else if (ch === 'B') {
           this.add.image(cx, floor, 'bench').setOrigin(0.5, 1).setScale(0.7).setDepth(5);
           const light = this.add.image(cx - 41, floor - 90, 'glow').setBlendMode(Phaser.BlendModes.ADD).setTint(0x7cc8ff).setScale(1.8).setAlpha(0.5).setDepth(6);
@@ -266,7 +289,7 @@ export class WorldScene extends Phaser.Scene {
 
   addInteractable(x, y, label, action) {
     const prompt = this.add
-      .text(x, y - 120, `↑  ${label}`, { fontFamily: BODY_FONT, fontSize: '18px', fontStyle: '700', color: '#e6f4ff' })
+      .text(x, y - 120, `E  ${label}`, { fontFamily: BODY_FONT, fontSize: '18px', fontStyle: '700', color: '#e6f4ff' })
       .setOrigin(0.5)
       .setShadow(0, 2, '#000000', 6, false, true)
       .setDepth(40)
@@ -282,6 +305,10 @@ export class WorldScene extends Phaser.Scene {
     const p = this.player;
     this.updateCamera(delta);
 
+    if (c.pressed.pause && this.hud?.ready && !this.hud.modal && !this.mapOpen && !this.busy) {
+      this.hud.togglePause();
+      return;
+    }
     if (this.hud?.ready) {
       if (this.hud.modal) {
         if (c.pressed.jump || c.pressed.attack || c.pressed.interact) this.hud.advance();
@@ -301,6 +328,8 @@ export class WorldScene extends Phaser.Scene {
     p.update(time, delta);
     if (p.dead) return;
 
+    if (this.boss?.active) this.boss.updateFx(time);
+    else for (const h of [...this.bossFx.getChildren()]) this.popBossFx(h);
     this.resolveAttack(time);
     this.checkThorns();
     this.trackSafeGround();
@@ -326,10 +355,10 @@ export class WorldScene extends Phaser.Scene {
 
     const maxScrollY = Math.max(1, this.worldH - HEIGHT);
     for (const l of this.layers) {
-      l.s.tilePositionX = cam.scrollX * l.fx + (l.drift ? (this.time.now / 1000) * l.drift : 0);
-      if (l.fy) l.s.tilePositionY = (cam.scrollY / maxScrollY) * (LAYER_H - HEIGHT);
+      l.s.tilePositionX = cam.worldView.x * l.fx + (l.drift ? (this.time.now / 1000) * l.drift : 0);
+      if (l.fy) l.s.tilePositionY = (cam.worldView.y / maxScrollY) * (LAYER_H - HEIGHT);
     }
-    this.fireflies.setPosition(cam.scrollX - 150, cam.scrollY - 150);
+    this.fireflies.setPosition(cam.worldView.x - 150, cam.worldView.y - 150);
   }
 
   // ------------------------------------------------------------ combate
@@ -348,6 +377,7 @@ export class WorldScene extends Phaser.Scene {
       landed = true;
       this.hitEffect(Phaser.Math.Clamp(e.x, rect.left, rect.right), Phaser.Math.Clamp(e.body.center.y, rect.top, rect.bottom));
       if (e === this.boss && this.boss.state === 'sleep') this.startBoss();
+      sfx(this, e === this.boss ? 'boss_hit' : 'hit');
       e.hit(p.x, a.dir);
       this.soul = Math.min(COMBAT.maxSoul, this.soul + COMBAT.soulPerHit);
     }
@@ -361,6 +391,7 @@ export class WorldScene extends Phaser.Scene {
     if (a.dir === 'down' && !a.pogoed && this.rectTouchesThorns(rect)) {
       a.pogoed = true;
       p.pogo();
+      sfx(this, 'pogo');
       this.hitEffect(p.x, p.y + 30);
     }
     if (landed) {
@@ -390,6 +421,7 @@ export class WorldScene extends Phaser.Scene {
   }
 
   hitDeposit(d) {
+    sfx(this, 'pop', { rate: 1.3 });
     d.hp--;
     this.tweens.add({ targets: d.img, x: d.img.x + 4, duration: 40, yoyo: true, repeat: 2 });
     this.spawnGeo(d.img.x, d.img.y - 30, d.hp > 0 ? 3 : 8);
@@ -401,6 +433,7 @@ export class WorldScene extends Phaser.Scene {
   }
 
   onPlayerAttack(p, dir) {
+    sfx(this, dir === 'up' ? 'slash_up' : 'slash', { volume: 0.7 });
     const s = this.add.image(0, 0, 'slash').setBlendMode(Phaser.BlendModes.ADD).setDepth(22).setScale(0.55);
     if (dir === 'up') s.setPosition(p.x, p.y - 118).setAngle(-90).setFlipY(p.facing < 0);
     else if (dir === 'down') s.setPosition(p.x, p.y + 30).setAngle(90).setFlipY(p.facing > 0);
@@ -409,10 +442,12 @@ export class WorldScene extends Phaser.Scene {
   }
 
   onPlayerDash(p) {
+    sfx(this, 'dash', { volume: 0.7 });
     this.burst(p.x - p.facing * 20, p.y - 40, 0x7cc8ff, 10);
   }
 
   onPlayerDoubleJump(p) {
+    sfx(this, 'double_jump', { volume: 0.6 });
     const e = this.add.particles(p.x, p.y, 'soft', {
       speedX: { min: -120, max: 120 },
       speedY: { min: 20, max: 140 },
@@ -428,6 +463,7 @@ export class WorldScene extends Phaser.Scene {
   }
 
   onPlayerStep(p) {
+    sfx(this, 'step', { volume: 0.18, vary: 0.2 });
     const e = this.add.particles(p.x - p.facing * 10, p.y, 'soft', {
       speedX: { min: -30, max: 30 },
       speedY: { min: -30, max: -5 },
@@ -442,11 +478,17 @@ export class WorldScene extends Phaser.Scene {
     this.time.delayedCall(350, () => e.destroy());
   }
 
+  onPlayerJump() {
+    sfx(this, 'jump', { volume: 0.5 });
+  }
+
   onPlayerLand(p) {
+    sfx(this, 'land', { volume: 0.45 });
     if (p.body.velocity.y >= 0) this.dust(p.x, p.y);
   }
 
   onEnemyKilled(e) {
+    sfx(this, 'kill', { volume: 0.8 });
     this.burst(e.x, e.body.center.y, 0x9fdcff, e === this.boss ? 60 : 18);
     this.spawnGeo(e.x, e.body.center.y, e.geo);
     if (e === this.boss) this.bossDefeated();
@@ -456,15 +498,8 @@ export class WorldScene extends Phaser.Scene {
     this.hud?.bossBar(true, boss.hp / boss.maxHp);
   }
 
-  bossSwipe(boss) {
-    const face = boss.face;
-    const r = new Phaser.Geom.Rectangle(face > 0 ? boss.x + 20 : boss.x - 200, boss.y - 150, 180, 150);
-    const s = this.add.image(boss.x + face * 110, boss.y - 80, 'slash').setBlendMode(Phaser.BlendModes.ADD).setTint(0xffb3d9).setDepth(22).setFlipX(face < 0);
-    this.tweens.add({ targets: s, alpha: 0, duration: 220, onComplete: () => s.destroy() });
-    if (Phaser.Geom.Intersects.RectangleToRectangle(r, this.bodyRect(this.player.body))) this.damagePlayer(boss.x);
-  }
-
   spawnOrb(x, y, vx, vy) {
+    sfx(this, 'spit', { volume: 0.6 });
     const o = this.hazards.create(x, y, 'orb').setScale(0.9).setDepth(15).setBlendMode(Phaser.BlendModes.ADD);
     o.body.setAllowGravity(false).setCircle(10, 14, 14);
     o.setVelocity(vx, vy);
@@ -472,23 +507,32 @@ export class WorldScene extends Phaser.Scene {
     this.time.delayedCall(4000, () => o.active && this.popHazard(o));
   }
 
-  spawnWave(x, y, dir) {
-    const w = this.hazards.create(x + dir * 40, y, 'wave').setOrigin(0.5, 1).setScale(0.8).setDepth(15).setBlendMode(Phaser.BlendModes.ADD);
-    w.body.setAllowGravity(false).setSize(50, 50).setOffset(23, 22);
-    w.setVelocityX(dir * 430);
-    w.setData('breaks', false);
-    this.time.delayedCall(1700, () => w.active && w.destroy());
+  popBossFx(h) {
+    if (!h.active || !h.body?.enable) return;
+    this.burst(h.x, h.y - (h.getData('kind') === 'shock' ? 20 : 0), 0xc28dff, 10);
+    this.retire(h);
+  }
+
+  // Remove um objeto com física sem quebrar a checagem de colisão em andamento:
+  // desliga o corpo agora e destrói no próximo quadro.
+  retire(obj) {
+    obj.body.enable = false;
+    obj.setVisible(false);
+    this.time.delayedCall(0, () => obj.destroy());
   }
 
   popHazard(h) {
+    if (!h.active || !h.body?.enable) return;
+    sfx(this, 'pop', { volume: 0.4 });
     this.burst(h.x, h.y, 0xd9a8ff, 8);
-    h.destroy();
+    this.retire(h);
   }
 
   damagePlayer(fromX) {
     const p = this.player;
     if (p.invulnerable || p.dead || this.busy) return;
     this.health--;
+    sfx(this, 'hurt');
     p.hurt(fromX);
     this.cameras.main.shake(160, 0.008);
     this.hud?.flashDamage();
@@ -531,6 +575,7 @@ export class WorldScene extends Phaser.Scene {
     if (this.busy) return;
     if (damage) {
       this.health--;
+      sfx(this, 'hurt');
       this.hud?.flashDamage();
       this.refreshHud();
       if (this.health <= 0) return this.die();
@@ -574,6 +619,7 @@ export class WorldScene extends Phaser.Scene {
   }
 
   completeHeal() {
+    sfx(this, 'heal', { volume: 0.7, vary: 0 });
     this.soul -= COMBAT.healCost;
     this.health++;
     this.burst(this.player.x, this.player.y - 60, 0xdff4ff, 16);
@@ -593,6 +639,7 @@ export class WorldScene extends Phaser.Scene {
   }
 
   collectPickup(g) {
+    sfx(this, 'geo', { volume: 0.35, vary: 0.12 });
     if (!g.active) return;
     this.state.geo += g.getData('geo') || 0;
     const s = this.add.image(g.x, g.y, 'glow').setBlendMode(Phaser.BlendModes.ADD).setTint(0xffd98a).setScale(0.4).setDepth(15);
@@ -623,6 +670,7 @@ export class WorldScene extends Phaser.Scene {
   }
 
   acquire(f) {
+    sfx(this, 'ability', { vary: 0 });
     const id = f.getData('id');
     const abilityKey = f.getData('ability');
     this.burst(f.x, f.y, 0xdff4ff, 40);
@@ -665,14 +713,17 @@ export class WorldScene extends Phaser.Scene {
       const target = it === best && !this.hud?.modal && !p.sitting ? 1 : 0;
       it.prompt.alpha = Phaser.Math.Linear(it.prompt.alpha, target, 0.2);
     }
-    if (best && p.onGround && !p.frozen && !p.sitting && (this.controls.pressed.interact || (this.controls.pressed.up && !this.controls.held.attack))) {
+    if (best && p.onGround && !p.frozen && !p.sitting && this.time.now > (this.talkCooldown || 0) && this.controls.pressed.interact) {
       best.action();
     }
   }
 
   say(lines) {
     this.controls.consume();
-    return this.hud.say(lines).then(() => this.controls.consume());
+    return this.hud.say(lines).then(() => {
+      this.controls.consume();
+      this.talkCooldown = this.time.now + 450; // o mesmo E que fechou não reabre a conversa
+    });
   }
 
   talkTo(ch, sprite) {
@@ -699,6 +750,7 @@ export class WorldScene extends Phaser.Scene {
   }
 
   rest(key) {
+    sfx(this, 'rest', { volume: 0.6, vary: 0 });
     this.sitAtBench(key);
     this.state.bench = key;
     this.health = this.state.maxHealth;
@@ -718,23 +770,42 @@ export class WorldScene extends Phaser.Scene {
   startBoss() {
     if (this.fightingBoss) return;
     this.fightingBoss = true;
-    for (const g of this.gates) {
-      this.tweens.add({ targets: g.img, alpha: 1, duration: 300 });
-    }
-    this.cameras.main.shake(400, 0.006);
-    this.hud.bossIntro('Guardião Oco');
-    this.hud.bossBar(true, 1);
-    this.time.delayedCall(1200, () => this.boss?.alive && this.boss.wake());
+    sfx(this, 'gate', { vary: 0 });
+    for (const g of this.gates) this.tweens.add({ targets: g.img, alpha: 1, duration: 300 });
+    playMusic('boss', { fadeMs: 800 });
+    // câmera desliza e trava mostrando a arena inteira
+    const cam = this.cameras.main;
+    const cx = (this.arena.left + this.arena.right) / 2 - 16;
+    const cy = (this.arena.top + this.arena.floor) / 2 + 64; // chão mais alto na tela, livre da barra
+    cam.stopFollow();
+    cam.pan(cx, cy, 700, 'Sine.easeInOut', false, (c, t) => {
+      if (t < 1) return;
+      cam.setBounds(cx - WIDTH / 2, cy - HEIGHT / 2, WIDTH, HEIGHT);
+      cam.startFollow(this.player.phys, true, 0.1, 0.1);
+    });
+    this.hud.bossIntro('Ender', 'Cavaleiro Espectral');
+    this.time.delayedCall(2700, () => this.fightingBoss && this.hud.bossBar(true, this.boss.hp / this.boss.maxHp));
+    this.time.delayedCall(1500, () => this.boss?.alive && this.boss.state === 'sleep' && this.boss.wake());
+  }
+
+  onBossHit(boss) {
+    this.hud?.bossBar(true, boss.hp / boss.maxHp);
+  }
+
+  onBossPhase(phase) {
+    this.hud?.bossPhase(phase);
   }
 
   bossDefeated() {
     this.fightingBoss = false;
     this.state.bossDefeated = true;
     this.hud.bossBar(false);
-    for (const g of this.gates) this.tweens.add({ targets: g.img, alpha: 0, duration: 800 });
-    this.cameras.main.flash(900, 255, 255, 255);
     this.hitStop(250);
-    this.time.delayedCall(600, () => {
+    this.time.delayedCall(1800, () => {
+      for (const g of this.gates) this.tweens.add({ targets: g.img, alpha: 0, duration: 800 });
+      sfx(this, 'gate', { vary: 0 });
+      this.cameras.main.setBounds(0, 0, this.worldW, this.worldH);
+      playMusic('world', { fadeMs: 3000 });
       this.tweens.add({ targets: this.raiz, alpha: 1, duration: 1500 });
       this.tweens.add({ targets: this.raizLight, alpha: 0.45, duration: 1500 });
       this.hud.toast('A Raiz desperta.');

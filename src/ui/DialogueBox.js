@@ -1,7 +1,11 @@
 import { WIDTH } from '../config.js';
 import { TITLE_FONT, BODY_FONT } from '../fonts.js';
+import { sfx } from '../audio/sfx.js';
 
 const CHAR_MS = 22;
+
+// "Voz" de cada personagem: altura do bipe que acompanha as letras.
+const VOICES = { Kio: 1.35, 'Vovó Musgo': 0.78, Lume: 1.75, Eco: 1.05, Raiz: 0.55 };
 
 // Caixa de diálogo no topo da tela, com ornamentos, efeito de máquina de escrever.
 // `play(lines)` devolve uma Promise que resolve quando a última fala fecha.
@@ -15,23 +19,7 @@ export class DialogueBox {
     this.boxY = y;
 
     this.container = scene.add.container(0, 0).setDepth(200).setVisible(false);
-    const bg = scene.add.graphics();
-    bg.fillStyle(0x03050c, 0.82).fillRoundedRect(x, y, w, h, 18);
-    const orn = scene.add.graphics();
-    orn.lineStyle(2, 0xdff4ff, 0.8);
-    for (const oy of [y + 10, y + h - 10]) {
-      orn.lineBetween(x + 120, oy, WIDTH / 2 - 16, oy);
-      orn.lineBetween(WIDTH / 2 + 16, oy, x + w - 120, oy);
-      orn.fillStyle(0xdff4ff, 0.9).fillPoints(
-        [
-          { x: WIDTH / 2, y: oy - 7 },
-          { x: WIDTH / 2 + 9, y: oy },
-          { x: WIDTH / 2, y: oy + 7 },
-          { x: WIDTH / 2 - 9, y: oy },
-        ],
-        true,
-      );
-    }
+    const bg = scene.add.image(WIDTH / 2, y + h / 2, 'ui-dialog').setScale(0.5);
 
     this.nameText = scene.add.text(WIDTH / 2, y + 36, '', { fontFamily: TITLE_FONT, fontSize: '22px', color: '#ffd98a' }).setOrigin(0.5);
     this.bodyText = scene.add
@@ -50,7 +38,7 @@ export class DialogueBox {
     const hit = scene.add.zone(x, y, w, h).setOrigin(0).setInteractive();
     hit.on('pointerdown', () => this.advance());
 
-    this.container.add([bg, orn, this.nameText, this.bodyText, this.arrow, hit]);
+    this.container.add([bg, this.nameText, this.bodyText, this.arrow, hit]);
     this.lines = [];
     this.index = 0;
     this.typing = null;
@@ -81,6 +69,7 @@ export class DialogueBox {
     this.bodyText.setColor(narrator ? '#bcd3ee' : '#e6f4ff');
     this.full = line.text;
     this.shown = 0;
+    this.voice = VOICES[line.who] || (line.who ? 1 : 0);
     this.bodyText.setText('');
     this.arrow.setVisible(false);
     this.typing?.remove();
@@ -90,6 +79,10 @@ export class DialogueBox {
       callback: () => {
         this.shown++;
         this.bodyText.setText(this.full.slice(0, this.shown));
+        const ch = this.full[this.shown - 1];
+        if (this.voice && this.shown % 2 === 0 && /[\p{L}\d]/u.test(ch)) {
+          sfx(this.scene, 'talk', { volume: 0.32, rate: this.voice, vary: 0.08 });
+        }
         if (this.shown >= this.full.length) this.finishTyping();
       },
     });
@@ -110,6 +103,7 @@ export class DialogueBox {
       return;
     }
     this.index++;
+    sfx(this.scene, 'ui_move', { volume: 0.3 });
     if (this.index < this.lines.length) {
       this.showLine();
       return;

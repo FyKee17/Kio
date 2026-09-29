@@ -5,7 +5,7 @@
 //   ^  espinhos             |  portão da arena (fecha durante a luta)
 //   P  início de jogo novo  B  santuário (descansar: cura e salva)
 //   c  rastejante           f  mariposa sombria       s  bulbo cuspidor
-//   K  chefe: Guardião Oco  g  depósito de fragmentos de luz
+//   K  chefe: Ender        g  depósito de fragmentos de luz
 //   D  habilidade: Passo Etéreo (dash)   J  habilidade: Chama Dupla (pulo duplo)
 //   H  Coração de Musgo (+1 de vida)     1-9  tábuas de lore (TABLETS)
 //   m l e r  personagens (NPCS)
@@ -26,13 +26,13 @@ export const ABILITIES = {
     key: 'dash',
     name: 'Passo Etéreo',
     text: 'A chama do Kio aprendeu a atravessar o vento.',
-    hint: 'Aperte C (ou Shift) para avançar rápido, no chão ou no ar.',
+    hint: 'Aperte Q para avançar rápido, no chão ou no ar.',
   },
   J: {
     key: 'doubleJump',
     name: 'Chama Dupla',
     text: 'Uma segunda chama acende sob seus pés.',
-    hint: 'Aperte pulo de novo no ar para saltar outra vez.',
+    hint: 'Aperte Espaço de novo no ar para saltar outra vez.',
   },
 };
 
@@ -40,7 +40,7 @@ export const TABLETS = {
   1: 'Quando a Lua Crescente caiu no rio, a floresta perdeu o sono. E quem não dorme, esquece.',
   2: 'As raízes guardam o que a copa esquece. Desça, pequeno. Desça até o silêncio ficar leve.',
   3: 'Da copa se vê o mundo inteiro. Mas é preciso duas chamas para alcançar o céu.',
-  4: 'Aqui repousa o Guardião. Ele guarda a Raiz de todos, até de quem veio salvá-la.',
+  4: 'Aqui vigia Ender, o Cavaleiro Espectral. Ele guarda a Raiz de todos, até de quem veio salvá-la.',
   5: 'Os vaga-lumes eram cartas de amor entre árvores. Hoje voam em branco.',
 };
 
@@ -106,7 +106,7 @@ export const NPCS = {
       return {
         lines: [
           { who: 'Lume', text: 'Duas chamas! Agora aquele paredão à direita do Bosque não é nada.' },
-          { who: 'Lume', text: 'Lá em cima fica o Santuário da Raiz. E o Guardião. Vai com cuidado.' },
+          { who: 'Lume', text: 'Lá em cima fica o Santuário da Raiz. E o Ender, o cavaleiro de chamas roxas. Vai com cuidado.' },
         ],
       };
     },

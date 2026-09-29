@@ -29,6 +29,14 @@ SHEETS = {
     'beetle':     dict(scale=0.75, w=208, h=112, anchor='feet'),
     # a mariposa vem com as poses embaralhadas: ordenamos da asa mais alta
     # para a mais baixa, assim a animação em vai-e-volta vira um bater de asas
+    # Ender, o chefe: quadros grandes (a espada e os arcos passam do corpo)
+    'ender_idle':   dict(scale=1.0, w=320, h=280, anchor='feet'),
+    'ender_walk':   dict(scale=1.0, w=320, h=280, anchor='feet'),
+    'ender_jump':   dict(scale=1.0, w=320, h=280, anchor='feet'),
+    'ender_attack': dict(scale=1.0, w=320, h=280, anchor='feet'),
+    # versões grandes para a tela de título
+    'kio_idle_hd':  dict(src='kio_idle', scale=1.0, w=288, h=272, anchor='feet'),
+    'npc_musgo_hd': dict(src='npc_musgo', scale=1.0, w=256, h=240, anchor='feet'),
     'moth':       dict(scale=0.75, w=160, h=128, anchor='head', sort='height'),
 }
 
@@ -55,6 +63,19 @@ def find_frames(im):
             else:
                 merged.append(s)
         merged = [s for s in merged if s[1] - s[0] > 30]
+        # quadros encostados viram um bloco alto demais: corta na linha mais vazia
+        while len(merged) < GRID:
+            tallest = max(merged, key=lambda s: s[1] - s[0])
+            y0, y1 = tallest
+            h = y1 - y0
+            others = sorted(s[1] - s[0] for s in merged if s is not tallest) or [h / 2]
+            if h < 1.5 * others[len(others) // 2]:
+                break
+            def coverage(y):
+                return sum(1 for x in range(c * cw, (c + 1) * cw, 2) if alpha[x, y] > 40)
+            cut = min(range(y0 + int(h * 0.3), y1 - int(h * 0.3)), key=coverage)
+            i = merged.index(tallest)
+            merged[i:i + 1] = [[y0, cut], [cut, y1]]
         for r, (y0, y1) in enumerate(merged):
             found.append((r * GRID + c, (c * cw, y0, (c + 1) * cw, y1)))
     return [box for _, box in sorted(found)]
@@ -85,7 +106,7 @@ def anchor_point(frame, mode):
 
 
 def process(name, cfg, preview):
-    src = Image.open(ROOT / 'art-src' / f'{name}.png').convert('RGBA')
+    src = Image.open(ROOT / 'art-src' / f"{cfg.get('src', name)}.png").convert('RGBA')
     boxes = find_frames(src)
     frames = []
     for box in boxes:

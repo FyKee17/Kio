@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { setupCamera } from '../view.js';
 import { WIDTH, HEIGHT } from '../config.js';
 import { TITLE_FONT, BODY_FONT } from '../fonts.js';
 import { MAP } from '../data/world.js';
@@ -6,6 +7,10 @@ import { buildBackdrop } from '../gfx/backdrop.js';
 import { buildSprites } from '../gfx/sprites.js';
 import { buildTerrain } from '../gfx/terrain.js';
 import { SHEETS, ANIMS } from '../data/anims.js';
+import { buildSfx } from '../audio/sfx.js';
+import { buildUi } from '../gfx/ui.js';
+import { buildFx } from '../gfx/fx.js';
+import { TRACKS, initMusic } from '../audio/music.js';
 
 // Carrega as folhas de arte (Kio, Vovó, besouro, mariposa) e gera o resto em código.
 export class BootScene extends Phaser.Scene {
@@ -14,31 +19,39 @@ export class BootScene extends Phaser.Scene {
   }
 
   preload() {
-    for (const [key, size] of Object.entries(SHEETS)) this.load.spritesheet(key, `assets/${key}.png`, size);
-  }
-
-  async create() {
+    setupCamera(this);
     this.add.text(WIDTH / 2, HEIGHT / 2 - 40, 'KIO', { fontFamily: TITLE_FONT, fontSize: '64px', color: '#e6f4ff' }).setOrigin(0.5);
-    const label = this.add
+    this.label = this.add
       .text(WIDTH / 2, HEIGHT / 2 + 40, 'a floresta está acordando...', { fontFamily: BODY_FONT, fontSize: '20px', color: '#8fb3d9' })
       .setOrigin(0.5);
     this.add.rectangle(WIDTH / 2, HEIGHT / 2 + 80, 360, 4, 0x1b2a45).setOrigin(0.5);
-    const bar = this.add.rectangle(WIDTH / 2 - 180, HEIGHT / 2 + 80, 1, 4, 0x6ff6e0).setOrigin(0, 0.5);
-    const progress = (p) => {
-      bar.width = Math.max(1, 360 * p);
-    };
-    await new Promise((r) => setTimeout(r, 30));
+    this.bar = this.add.rectangle(WIDTH / 2 - 180, HEIGHT / 2 + 80, 1, 4, 0x6ff6e0).setOrigin(0, 0.5);
+    // metade da barra: baixar arquivos; outra metade: gerar o mundo
+    this.load.on('progress', (p) => this.progress(p * 0.5));
+    for (const [key, size] of Object.entries(SHEETS)) this.load.spritesheet(key, `assets/${key}.png`, size);
+    for (const [name, url] of Object.entries(TRACKS)) this.load.audio(`music-${name}`, url);
+  }
 
+  progress(p) {
+    this.bar.width = Math.max(1, 360 * p);
+  }
+
+  async create() {
+    await new Promise((r) => setTimeout(r, 30));
+    buildSfx(this.game);
+    initMusic(this.game);
     buildSprites(this);
+    buildUi(this);
+    buildFx(this);
     buildBackdrop(this);
-    progress(0.1);
+    this.progress(0.55);
     await new Promise((r) => setTimeout(r, 0));
 
-    const terrain = await buildTerrain(this, MAP, (p) => progress(0.1 + p * 0.9));
+    const terrain = await buildTerrain(this, MAP, (p) => this.progress(0.55 + p * 0.45));
     this.registry.set('terrain', terrain);
 
     this.createAnims();
-    label.setText('');
+    this.label.setText('');
     this.scene.start('Title');
   }
 

@@ -1,8 +1,10 @@
 import Phaser from 'phaser';
+import { setupCamera } from '../view.js';
 import { WIDTH, HEIGHT } from '../config.js';
 import { TITLE_FONT, BODY_FONT } from '../fonts.js';
 import { ENDING, TABLETS } from '../data/world.js';
 import { clearSave } from '../save.js';
+import { playMusic } from '../audio/music.js';
 
 export class EndScene extends Phaser.Scene {
   constructor() {
@@ -10,6 +12,8 @@ export class EndScene extends Phaser.Scene {
   }
 
   create() {
+    setupCamera(this);
+    playMusic('menu', { fadeMs: 3000 });
     this.done = false;
     const s = this.registry.get('state');
     // porcentagem de conclusão: habilidades, corações, tábuas, conversas e o chefe
@@ -63,7 +67,7 @@ export class EndScene extends Phaser.Scene {
     const bg = this.add.image(WIDTH / 2, HEIGHT / 2, 'bg-sky').setAlpha(0);
     this.tweens.add({ targets: bg, alpha: 1, duration: 2000 });
     this.add
-      .text(WIDTH / 2, HEIGHT / 2 - 90, 'Fim', { fontFamily: TITLE_FONT, fontSize: '96px', color: '#ffffff' })
+      .text(WIDTH / 2, HEIGHT / 2 - 90, 'Fim', { fontFamily: TITLE_FONT, fontSize: '96px', color: '#ffffff', padding: { x: 30, y: 30 } })
       .setOrigin(0.5)
       .setShadow(0, 0, '#7cc8ff', 30, false, true);
     this.add
@@ -73,7 +77,7 @@ export class EndScene extends Phaser.Scene {
       .text(WIDTH / 2, HEIGHT / 2 + 80, `${minutes} min   ·   ${deaths} ${deaths === 1 ? 'queda' : 'quedas'}`, { fontFamily: BODY_FONT, fontSize: '22px', color: '#bcd3ee' })
       .setOrigin(0.5);
     this.add
-      .text(WIDTH / 2, HEIGHT - 50, 'obrigado por jogar  ·  aperte pulo para voltar', { fontFamily: BODY_FONT, fontSize: '18px', color: '#8fa9c9' })
+      .text(WIDTH / 2, HEIGHT - 50, 'obrigado por jogar  ·  aperte Espaço para voltar', { fontFamily: BODY_FONT, fontSize: '18px', color: '#8fa9c9' })
       .setOrigin(0.5);
   }
 }

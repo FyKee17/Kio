@@ -8,6 +8,8 @@ export function waitForFont() {
   return Promise.race([
     Promise.all([
       document.fonts.load('700 32px "Cinzel"'),
+      document.fonts.load('500 32px "Cinzel"'),
+      document.fonts.load('italic 400 22px "Nunito"'),
       document.fonts.load('400 22px "Nunito"'),
       document.fonts.load('700 22px "Nunito"'),
     ]),

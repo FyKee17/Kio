@@ -288,7 +288,9 @@ export class Player {
       s.play('kio-land', true);
     } else if (vx > 200) {
       s.play('kio-run', true);
-      if (time - this.lastStep > 230) {
+      // a passada acompanha a velocidade real (acelerando/freando não "patina")
+      s.anims.timeScale = Phaser.Math.Clamp(vx / PHYS.runSpeed, 0.75, 1);
+      if (time - this.lastStep > 300) {
         this.lastStep = time;
         this.scene.onPlayerStep?.(this);
       }
@@ -297,6 +299,7 @@ export class Player {
     } else {
       s.play('kio-idle', true);
     }
+    if (s.anims.currentAnim?.key !== 'kio-run') s.anims.timeScale = 1;
     s.angle = tilt * this.facing;
     // piscar enquanto invulnerável depois de levar dano
     const inv = time < this.invulnUntil;

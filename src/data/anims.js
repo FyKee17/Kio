@@ -34,7 +34,7 @@ export const ANIMS = [
   // Kio
   { key: 'kio-idle', sheet: 'kio_idle', frames: range(0, 24), rate: 14, repeat: -1 },
   { key: 'kio-walk', sheet: 'kio_walk', frames: range(0, 24), rate: 28, repeat: -1 },
-  { key: 'kio-run', sheet: 'kio_run', frames: range(0, 24), rate: 32, repeat: -1 },
+  { key: 'kio-run', sheet: 'kio_run', frames: range(0, 24), rate: 20, repeat: -1 }, // passada calma, casando com a velocidade
   { key: 'kio-rise', sheet: 'kio_jump', frames: [7, 8], rate: 12, repeat: 0 },
   { key: 'kio-apex', sheet: 'kio_jump', frames: [9, 10, 11, 12, 13], rate: 16, repeat: 0 },
   { key: 'kio-fall', sheet: 'kio_jump', frames: [14, 15, 16, 17, 18], rate: 12, repeat: -1 },

@@ -6,6 +6,7 @@ import { Controls } from '../controls.js';
 import { Player } from '../objects/Player.js';
 import { Boss, ENEMY_TYPES } from '../objects/Enemies.js';
 import { LAYER_H } from '../gfx/backdrop.js';
+import { FEET } from '../data/anims.js';
 import { writeSave, encodeBits, decodeBits } from '../save.js';
 
 const REVEAL_RADIUS = 13;
@@ -234,6 +235,12 @@ export class WorldScene extends Phaser.Scene {
   createNpc(ch, x, floor) {
     const def = NPCS[ch];
     const s = this.add.sprite(x, floor, def.art).setOrigin(0.5, 1).setScale(0.5).setDepth(6).play(`${def.art}-idle`);
+    if (ch === 'm') {
+      // Vovó Musgo (arte em folha): lanterninha verde acesa na mão
+      s.setOrigin(0.5, FEET.npc_musgo).setScale(0.55);
+      const lamp = this.add.image(x + 14, floor - 28, 'glow').setBlendMode(Phaser.BlendModes.ADD).setTint(0xc8ff8a).setScale(1.1).setAlpha(0.5).setDepth(7);
+      this.tweens.add({ targets: lamp, alpha: 0.25, duration: 1500, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
+    }
     if (ch === 'l') {
       s.setOrigin(0.5, 0.5).setY(floor - 40);
       this.tweens.add({ targets: s, y: floor - 50, duration: 1200, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
@@ -418,6 +425,21 @@ export class WorldScene extends Phaser.Scene {
     e.setDepth(21);
     e.explode(18);
     this.time.delayedCall(500, () => e.destroy());
+  }
+
+  onPlayerStep(p) {
+    const e = this.add.particles(p.x - p.facing * 10, p.y, 'soft', {
+      speedX: { min: -30, max: 30 },
+      speedY: { min: -30, max: -5 },
+      lifespan: 280,
+      scale: { start: 0.25, end: 0 },
+      tint: 0x9fdcff,
+      alpha: { start: 0.45, end: 0 },
+      emitting: false,
+    });
+    e.setDepth(21);
+    e.explode(3);
+    this.time.delayedCall(350, () => e.destroy());
   }
 
   onPlayerLand(p) {

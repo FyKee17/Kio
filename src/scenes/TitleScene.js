@@ -34,7 +34,7 @@ export class TitleScene extends Phaser.Scene {
 
     const halo = this.add.image(WIDTH / 2 - 8, 470, 'glow').setBlendMode(Phaser.BlendModes.ADD).setTint(0x5fb4ff).setScale(2.4).setAlpha(0.5);
     this.tweens.add({ targets: halo, alpha: 0.25, duration: 1600, yoyo: true, repeat: -1 });
-    this.add.sprite(WIDTH / 2, 560, 'kio_idle').setOrigin(0.5, 182 / 192).setScale(1).play('kio-idle');
+    this.add.sprite(WIDTH / 2, 560, 'kio_idle').setOrigin(0.5, 198 / 208).setScale(0.95).play('kio-idle');
     this.add.image(WIDTH / 2, HEIGHT / 2, 'fg-leaves').setAlpha(0.9);
 
     this.add.particles(0, 0, 'soft', {

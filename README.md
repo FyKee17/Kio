@@ -7,7 +7,7 @@ numa floresta que esqueceu o próprio nome e desce até a Raiz do mundo.
 Feito com [Phaser 3](https://phaser.io) + [Vite](https://vite.dev). O cenário
 inteiro (terreno orgânico, musgo brilhante, cogumelos, cipós, árvores ao fundo,
 lua, névoa, inimigos, personagens) é desenhado em código quando o jogo carrega;
-só o Kio usa arte em arquivo.
+o Kio, a Vovó Musgo, o besouro e a mariposa usam arte em arquivo.
 
 ## Rodar
 
@@ -56,4 +56,5 @@ O mapa (M) vai se revelando conforme você explora.
 | fundo (céu, lua, árvores, névoa) | `src/gfx/backdrop.js` |
 | inimigos, personagens e objetos desenhados | `src/gfx/sprites.js` |
 | comportamento dos inimigos e do chefe | `src/objects/Enemies.js` |
-| sprites do Kio | `art-src/` + `tools/process_sprites.py` (veja `public/assets/LEIA-ME.md`) |
+| arte (Kio, Vovó, besouro, mariposa) | `art-src/` + `tools/process_sprites.py` (veja `public/assets/LEIA-ME.md`) |
+| quais quadros formam cada animação | `src/data/anims.js` |

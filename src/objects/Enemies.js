@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { FEET } from '../data/anims.js';
 
 // Base: vida, piscar ao levar golpe, empurrão e morte com fragmentos de luz.
 class Enemy extends Phaser.Physics.Arcade.Sprite {
@@ -30,10 +31,34 @@ class Enemy extends Phaser.Physics.Arcade.Sprite {
     if (this.hp <= 0) {
       this.alive = false;
       this.scene.onEnemyKilled(this);
+      this.fling(fromX);
       this.destroy();
       return true;
     }
     return false;
+  }
+
+  // Corpo arremessado girando e apagando, como no Hollow Knight.
+  fling(fromX) {
+    const dir = this.x < fromX ? -1 : 1;
+    const corpse = this.scene.add
+      .image(this.x, this.y, this.texture.key, this.frame.name)
+      .setOrigin(this.originX, this.originY)
+      .setScale(this.scaleX, this.scaleY)
+      .setFlipX(this.flipX)
+      .setDepth(this.depth)
+      .setTintFill(0xffffff);
+    this.scene.time.delayedCall(60, () => corpse.active && corpse.setTint(0x6f7fa6));
+    this.scene.tweens.add({ targets: corpse, x: corpse.x + dir * 70, duration: 650, ease: 'Quad.easeOut' });
+    this.scene.tweens.add({ targets: corpse, y: corpse.y - 50, duration: 220, ease: 'Quad.easeOut', yoyo: true });
+    this.scene.tweens.add({
+      targets: corpse,
+      angle: dir * 160,
+      alpha: 0,
+      duration: 700,
+      delay: 60,
+      onComplete: () => corpse.destroy(),
+    });
   }
 
   get stunned() {
@@ -43,9 +68,10 @@ class Enemy extends Phaser.Physics.Arcade.Sprite {
 
 export class Crawler extends Enemy {
   constructor(scene, x, y) {
-    super(scene, x, y, 'crawler', { hp: 3, geo: 4 });
-    this.setOrigin(0.5, 1);
-    this.body.setSize(96, 50).setOffset(16, 44);
+    super(scene, x, y, 'beetle', { hp: 3, geo: 4, scale: 0.55 });
+    this.setOrigin(0.5, FEET.beetle);
+    // corpo sem a cauda de chama (quadro 208x112, pés na linha 102)
+    this.body.setSize(130, 70).setOffset(44, 32);
     this.dir = Math.random() < 0.5 ? -1 : 1;
     this.play('crawler-walk');
   }
@@ -65,9 +91,9 @@ export class Crawler extends Enemy {
 
 export class Flyer extends Enemy {
   constructor(scene, x, y) {
-    super(scene, x, y, 'flyer', { hp: 3, geo: 5, knock: 340 });
+    super(scene, x, y, 'moth', { hp: 3, geo: 5, knock: 340, scale: 0.6 });
     this.body.setAllowGravity(false);
-    this.body.setCircle(34, 30, 26);
+    this.body.setCircle(38, 42, 26);
     this.home = new Phaser.Math.Vector2(x, y);
     this.t = Math.random() * 10;
     this.play('flyer-fly');

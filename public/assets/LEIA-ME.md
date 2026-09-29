@@ -1,31 +1,37 @@
-# Arte do Kio
+# Arte do jogo
 
-As folhas originais ficam em `art-src/` (5x5 quadros de 256 px, fundo transparente):
+As folhas originais ficam em `art-src/` (5x5 quadros, fundo transparente,
+personagem virado para a direita):
 
-- `art-src/kio_idle.png`: parado (25 quadros)
-- `art-src/kio_run.png`: correndo com a espada (25 quadros)
+| arquivo | o que é | usado como |
+|---------|---------|------------|
+| `kio_idle.png` | Kio parado | `kio-idle` |
+| `kio_walk.png` | Kio andando | `kio-walk` (começo e fim da corrida) |
+| `kio_run.png` | Kio correndo | `kio-run` |
+| `kio_jump.png` | Kio pulando | `kio-rise`, `kio-apex`, `kio-fall`, `kio-land` |
+| `kio_attack.png` | Kio golpeando | `kio-slash`, `kio-slash-up` |
+| `npc_musgo.png` | Vovó Musgo | `npc_musgo-idle` |
+| `beetle.png` | besouro rastejante | `crawler-walk` |
+| `moth.png` | mariposa sombria | `flyer-fly` |
 
 Depois de trocar ou adicionar uma folha, rode:
 
 ```bash
 pip install pillow
-python3 tools/process_sprites.py
+python3 tools/process_sprites.py --preview
 ```
 
-O script recorta cada quadro, reduz para 192x192, alinha pelos pés e pelo
-centro do corpo (para o personagem não tremer) e salva aqui em
-`public/assets/`. O jogo mostra o Kio em escala 0.7 (cerca de 90 px de altura).
+O script acha cada quadro pela coluna (funciona mesmo se as linhas da folha
+estiverem desalinhadas), reduz, alinha pelos pés e pelo centro do corpo (ou pela
+cabeça, no caso da mariposa) e salva aqui em `public/assets/`. Com `--preview`
+ele também gera `art-src/preview/` com os quadros numerados, para você escolher
+quais quadros entram em cada animação em `src/data/anims.js`.
 
-## Animações que ainda usam quadros emprestados
+## Para mandar uma folha nova
 
-Hoje pulo, queda, dash e golpe reaproveitam quadros da corrida. Se você mandar
-folhas no mesmo formato (5x5 de 256 px, virado para a direita), elas encaixam direto:
+1. Coloque em `art-src/<nome>.png`.
+2. Acrescente `<nome>` em `SHEETS` no `tools/process_sprites.py` (escala e tamanho do quadro).
+3. Acrescente em `SHEETS` e `ANIMS` no `src/data/anims.js`.
 
-- `kio_jump`: subindo e caindo
-- `kio_attack`: golpe de espada (de lado, para cima e para baixo)
-- `kio_dash`: avanço
-- `kio_hurt`: levando dano
-- `kio_focus`: curando (concentrando a chama)
-
-Para ligar uma folha nova: acrescente o nome em `SHEETS` no script, carregue em
-`src/scenes/BootScene.js` e use em `animate()` de `src/objects/Player.js`.
+Animações que ainda aproveitam outros quadros: dash (usa um quadro da corrida),
+dano (quadro do pulo) e golpe para baixo (quadros da queda).

@@ -5,16 +5,16 @@ import { MAP } from '../data/world.js';
 import { buildBackdrop } from '../gfx/backdrop.js';
 import { buildSprites } from '../gfx/sprites.js';
 import { buildTerrain } from '../gfx/terrain.js';
+import { SHEETS, ANIMS } from '../data/anims.js';
 
-// Carrega a arte do Kio e gera todo o resto (fundo, sprites, terreno) em código.
+// Carrega as folhas de arte (Kio, Vovó, besouro, mariposa) e gera o resto em código.
 export class BootScene extends Phaser.Scene {
   constructor() {
     super('Boot');
   }
 
   preload() {
-    this.load.spritesheet('kio_idle', 'assets/kio_idle.png', { frameWidth: 192, frameHeight: 192 });
-    this.load.spritesheet('kio_run', 'assets/kio_run.png', { frameWidth: 192, frameHeight: 192 });
+    for (const [key, size] of Object.entries(SHEETS)) this.load.spritesheet(key, `assets/${key}.png`, size);
   }
 
   async create() {
@@ -44,11 +44,10 @@ export class BootScene extends Phaser.Scene {
 
   createAnims() {
     const a = this.anims;
-    a.create({ key: 'kio-idle', frames: a.generateFrameNumbers('kio_idle', { start: 0, end: 24 }), frameRate: 14, repeat: -1 });
-    a.create({ key: 'kio-run', frames: a.generateFrameNumbers('kio_run', { start: 0, end: 24 }), frameRate: 30, repeat: -1 });
-    a.create({ key: 'crawler-walk', frames: a.generateFrameNumbers('crawler', { start: 0, end: 3 }), frameRate: 8, repeat: -1 });
-    a.create({ key: 'flyer-fly', frames: a.generateFrameNumbers('flyer', { start: 0, end: 3 }), frameRate: 14, repeat: -1, yoyo: false });
-    for (const npc of ['npc_musgo', 'npc_lume', 'npc_eco', 'npc_raiz']) {
+    for (const def of ANIMS) {
+      a.create({ key: def.key, frames: a.generateFrameNumbers(def.sheet, { frames: def.frames }), frameRate: def.rate, repeat: def.repeat });
+    }
+    for (const npc of ['npc_lume', 'npc_eco', 'npc_raiz']) {
       a.create({ key: `${npc}-idle`, frames: a.generateFrameNumbers(npc, { start: 0, end: 1 }), frameRate: 1.6, repeat: -1 });
     }
   }

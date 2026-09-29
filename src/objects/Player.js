@@ -1,8 +1,9 @@
 import Phaser from 'phaser';
 import { PHYS, COMBAT } from '../config.js';
+import { FEET as FEET_LINES } from '../data/anims.js';
 
-const SCALE = 0.7; // quadros de 192px -> Kio com ~90px de altura
-const FEET = 182 / 192; // linha dos pés dentro do quadro
+const SCALE = 0.68; // quadros de 224x208 -> Kio com ~90px de altura
+const FEET = FEET_LINES.kio; // linha dos pés dentro do quadro
 const approach = (v, target, step) => (v < target ? Math.min(v + step, target) : Math.max(v - step, target));
 
 // O Kio é um corpo físico invisível (retângulo) + uma sprite que o acompanha.
@@ -39,6 +40,9 @@ export class Player {
     this.dead = false;
     this.wasOnGround = true;
     this.lastGhost = 0;
+    this.attackAnimUntil = 0;
+    this.landUntil = 0;
+    this.lastStep = 0;
   }
 
   get x() {
@@ -165,12 +169,16 @@ export class Player {
         this.attack = { dir, start: time, until: time + active, hits: new Set() };
         this.attackReadyAt = time + COMBAT.attackCooldownMs;
         this.scene.onPlayerAttack(this, dir);
+        const anim = { side: 'kio-slash', up: 'kio-slash-up', down: 'kio-slash-down' }[dir];
+        this.sprite.play(anim);
+        this.attackAnimUntil = time + (dir === 'side' ? 210 : 190);
       }
     }
     if (this.attack && time > Math.max(this.attack.until, this.attack.start + 170)) this.attack = null;
 
     if (onGround && !this.wasOnGround) {
       this.squash(1.2, 0.84);
+      this.landUntil = time + 150;
       this.scene.onPlayerLand(this);
     }
     this.wasOnGround = onGround;
@@ -218,24 +226,38 @@ export class Player {
     return time < this.dropUntil;
   }
 
+  // Escolhe a animação pelo estado: dash, golpe, no ar (subindo/topo/caindo),
+  // aterrissando, correndo, andando ou parado.
   animate(time, onGround, healing) {
     const s = this.sprite;
-    s.setFlipX(this.facing < 0);
     const b = this.body;
+    const vx = Math.abs(b.velocity.x);
+    s.setFlipX(this.facing < 0);
     let tilt = 0;
     if (this.dashing) {
       s.anims.stop();
       s.setTexture('kio_run', 3);
-      tilt = 8;
-    } else if (this.attack) {
+      tilt = 6;
+    } else if (time < this.hurtUntil) {
       s.anims.stop();
-      s.setTexture('kio_run', this.attack.dir === 'side' ? 4 : 13);
+      s.setTexture('kio_jump', 4);
+      tilt = -8;
+    } else if (time < this.attackAnimUntil) {
+      // a animação de golpe já está tocando
     } else if (!onGround) {
-      s.anims.stop();
-      s.setTexture('kio_run', b.velocity.y < 0 ? 2 : 17);
-      tilt = Phaser.Math.Clamp(b.velocity.y / 90, -5, 7);
-    } else if (Math.abs(b.velocity.x) > 25) {
+      if (b.velocity.y < -160) s.play('kio-rise', true);
+      else if (b.velocity.y < 160) s.play('kio-apex', true);
+      else s.play('kio-fall', true);
+    } else if (time < this.landUntil && vx < 60) {
+      s.play('kio-land', true);
+    } else if (vx > 200) {
       s.play('kio-run', true);
+      if (time - this.lastStep > 230) {
+        this.lastStep = time;
+        this.scene.onPlayerStep?.(this);
+      }
+    } else if (vx > 25) {
+      s.play('kio-walk', true);
     } else {
       s.play('kio-idle', true);
     }
@@ -251,7 +273,7 @@ export class Player {
     const x = this.x;
     const y = this.y;
     this.sprite.setPosition(x, y);
-    this.halo.setPosition(x - 10 * this.facing, y - 72);
+    this.halo.setPosition(x - 14 * this.facing, y - 78);
   }
 
   squash(sx, sy) {

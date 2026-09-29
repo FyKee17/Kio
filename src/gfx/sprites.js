@@ -1,6 +1,6 @@
 // Sprites desenhadas em código (inimigos, personagens, objetos, efeitos).
 // Tudo é desenhado em 2x e exibido em escala 0.5 para ficar nítido.
-// O Kio usa as folhas de arte em public/assets/.
+// O Kio, a Vovó Musgo, o besouro e a mariposa usam as folhas em public/assets/.
 
 import { sheetTexture, canvasTexture, glow, rgba } from './util.js';
 
@@ -69,87 +69,6 @@ export function buildSprites(scene) {
   });
 
   // ---- inimigos
-  sheetTexture(scene, 'crawler', 128, 96, 4, (ctx, i) => {
-    // perninhas
-    ctx.strokeStyle = DARK;
-    ctx.lineWidth = 5;
-    ctx.lineCap = 'round';
-    for (let k = 0; k < 3; k++) {
-      const lx = 38 + k * 24;
-      const phase = (i + k) % 2 ? 6 : -6;
-      ctx.beginPath();
-      ctx.moveTo(lx, 70);
-      ctx.lineTo(lx + phase, 90);
-      ctx.stroke();
-    }
-    // casco
-    const bob = i % 2 ? 2 : 0;
-    const g = ctx.createLinearGradient(0, 20, 0, 80);
-    g.addColorStop(0, '#26335a');
-    g.addColorStop(1, DARK);
-    ctx.fillStyle = g;
-    ctx.beginPath();
-    ctx.ellipse(62, 60 + bob, 48, 30, 0, Math.PI, 0);
-    ctx.lineTo(110, 76 + bob);
-    ctx.lineTo(14, 76 + bob);
-    ctx.closePath();
-    ctx.fill();
-    outline(ctx);
-    // placas e pintas luminosas
-    ctx.strokeStyle = 'rgba(0,0,0,0.5)';
-    ctx.lineWidth = 3;
-    for (const px of [44, 66]) {
-      ctx.beginPath();
-      ctx.moveTo(px, 34 + bob);
-      ctx.quadraticCurveTo(px + 6, 55, px, 76 + bob);
-      ctx.stroke();
-    }
-    for (const [sx, sy] of [[36, 52], [57, 42], [80, 50]]) {
-      glow(ctx, sx, sy + bob, 12, '#6ff6e0', 0.8);
-    }
-    // cabeça
-    ctx.fillStyle = DARK;
-    ctx.beginPath();
-    ctx.ellipse(108, 66 + bob, 16, 14, 0, 0, Math.PI * 2);
-    ctx.fill();
-    eyes(ctx, 112, 64 + bob, 5, 3, '#ffe9a8');
-  });
-
-  sheetTexture(scene, 'flyer', 128, 112, 4, (ctx, i) => {
-    const flap = [1, 0.55, 0.15, 0.55][i];
-    for (const side of [-1, 1]) {
-      ctx.save();
-      ctx.translate(64, 50);
-      ctx.scale(side, flap);
-      const g = ctx.createRadialGradient(30, -10, 4, 30, -10, 56);
-      g.addColorStop(0, '#3a2566');
-      g.addColorStop(1, '#120a26');
-      ctx.fillStyle = g;
-      ctx.beginPath();
-      ctx.moveTo(4, 0);
-      ctx.bezierCurveTo(30, -60, 70, -50, 60, -8);
-      ctx.bezierCurveTo(56, 20, 30, 30, 4, 8);
-      ctx.fill();
-      outline(ctx, 'rgba(194,141,255,0.6)', 2);
-      glow(ctx, 36, -18, 14, '#c28dff', 0.9);
-      glow(ctx, 48, 2, 8, '#e3c8ff', 0.8);
-      ctx.restore();
-    }
-    ctx.fillStyle = DARK;
-    ctx.beginPath();
-    ctx.ellipse(64, 60, 13, 26, 0, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.strokeStyle = DARK;
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.moveTo(60, 38);
-    ctx.quadraticCurveTo(50, 20, 44, 22);
-    ctx.moveTo(68, 38);
-    ctx.quadraticCurveTo(78, 20, 84, 22);
-    ctx.stroke();
-    eyes(ctx, 64, 46, 6, 3, '#ff9fd6');
-  });
-
   sheetTexture(scene, 'spitter', 112, 128, 2, (ctx, i) => {
     // raiz/caule
     ctx.fillStyle = DARK;
@@ -285,41 +204,6 @@ export function buildSprites(scene) {
   });
 
   // ---- personagens
-  sheetTexture(scene, 'npc_musgo', 160, 170, 2, (ctx, i) => {
-    const b = i;
-    // bengala
-    ctx.strokeStyle = '#2a2f45';
-    ctx.lineWidth = 5;
-    ctx.beginPath();
-    ctx.moveTo(122, 70);
-    ctx.lineTo(128, 168);
-    ctx.stroke();
-    glow(ctx, 122, 64, 26, '#ffd98a', 0.9);
-    ctx.fillStyle = '#fff1c9';
-    ctx.beginPath();
-    ctx.arc(122, 64, 6, 0, Math.PI * 2);
-    ctx.fill();
-    // corpo curvado com xale de musgo
-    const g = ctx.createLinearGradient(0, 50, 0, 170);
-    g.addColorStop(0, '#2b6b5f');
-    g.addColorStop(0.5, '#173b3a');
-    g.addColorStop(1, DARK);
-    ctx.fillStyle = g;
-    ctx.beginPath();
-    ctx.moveTo(40, 168);
-    ctx.bezierCurveTo(26, 120, 44, 64 + b, 86, 56 + b);
-    ctx.bezierCurveTo(118, 54 + b, 122, 100, 116, 168);
-    ctx.fill();
-    outline(ctx, 'rgba(111,246,224,0.45)');
-    for (let k = 0; k < 7; k++) glow(ctx, 44 + k * 10, 80 + (k % 3) * 14 + b, 7, '#6ff6e0', 0.6);
-    // rosto
-    ctx.fillStyle = DARK;
-    ctx.beginPath();
-    ctx.ellipse(92, 84 + b, 22, 18, 0, 0, Math.PI * 2);
-    ctx.fill();
-    eyes(ctx, 96, 84 + b, 7, 2.6, '#fff4d0');
-  });
-
   sheetTexture(scene, 'npc_lume', 72, 72, 2, (ctx, i) => {
     const b = i * 2;
     for (const s of [-1, 1]) {

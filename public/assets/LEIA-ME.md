@@ -13,6 +13,7 @@ personagem virado para a direita):
 | `npc_musgo.png` | Vovó Musgo | `npc_musgo-idle` |
 | `beetle.png` | besouro rastejante | `crawler-walk` |
 | `moth.png` | mariposa sombria | `flyer-fly` |
+| (gerada) `kio_sit.png` | Kio sentado no santuário, montado pelo script a partir de `kio_idle` | `kio-sit` |
 
 Depois de trocar ou adicionar uma folha, rode:
 

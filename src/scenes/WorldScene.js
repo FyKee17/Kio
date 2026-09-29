@@ -51,6 +51,8 @@ export class WorldScene extends Phaser.Scene {
     const spawn = this.spawnPoint();
     this.player = new Player(this, spawn.x, spawn.y, this.controls);
     this.lastSafe = { ...spawn };
+    // ao continuar ou renascer, o Kio acorda sentado no santuário
+    if (this.state.bench) this.sitAtBench(this.state.bench);
 
     this.physics.add.collider(this.player.phys, this.layer, null, (p, tile) =>
       tile.index === 1 ? !this.player.isDropping(this.time.now) && this.player.body.velocity.y >= 0 : true,
@@ -148,7 +150,6 @@ export class WorldScene extends Phaser.Scene {
       { s: mk('bg-mid', -80), fx: 0.3, fy: 1 },
     ];
     this.darkness = this.add.rectangle(WIDTH / 2, HEIGHT / 2, WIDTH, HEIGHT, 0x03050c, 0).setScrollFactor(0).setDepth(-70);
-    this.fg = mk('fg-leaves', 60).setAlpha(0.9);
   }
 
   createTerrainArt() {
@@ -207,8 +208,8 @@ export class WorldScene extends Phaser.Scene {
           this.enemies.add(this.boss);
           this.boss.body.setAllowGravity(true);
         } else if (ch === 'B') {
-          this.add.image(cx, floor, 'bench').setOrigin(0.5, 1).setScale(0.5).setDepth(5);
-          const light = this.add.image(cx - 30, floor - 64, 'glow').setBlendMode(Phaser.BlendModes.ADD).setTint(0x7cc8ff).setScale(1.8).setAlpha(0.5).setDepth(6);
+          this.add.image(cx, floor, 'bench').setOrigin(0.5, 1).setScale(0.7).setDepth(5);
+          const light = this.add.image(cx - 41, floor - 90, 'glow').setBlendMode(Phaser.BlendModes.ADD).setTint(0x7cc8ff).setScale(1.8).setAlpha(0.5).setDepth(6);
           this.tweens.add({ targets: light, alpha: 0.3, duration: 1300, yoyo: true, repeat: -1 });
           this.addInteractable(cx, floor, 'Descansar', () => this.rest(`${tx},${ty}`));
           this.benchSpots = [...(this.benchSpots || []), { tx, ty }];
@@ -328,7 +329,6 @@ export class WorldScene extends Phaser.Scene {
       l.s.tilePositionX = cam.scrollX * l.fx + (l.drift ? (this.time.now / 1000) * l.drift : 0);
       if (l.fy) l.s.tilePositionY = (cam.scrollY / maxScrollY) * (LAYER_H - HEIGHT);
     }
-    this.fg.tilePositionX = cam.scrollX * 1.25;
     this.fireflies.setPosition(cam.scrollX - 150, cam.scrollY - 150);
   }
 
@@ -662,10 +662,10 @@ export class WorldScene extends Phaser.Scene {
       }
     }
     for (const it of this.interactables) {
-      const target = it === best && !this.hud?.modal ? 1 : 0;
+      const target = it === best && !this.hud?.modal && !p.sitting ? 1 : 0;
       it.prompt.alpha = Phaser.Math.Linear(it.prompt.alpha, target, 0.2);
     }
-    if (best && p.onGround && !p.frozen && (this.controls.pressed.interact || (this.controls.pressed.up && !this.controls.held.attack))) {
+    if (best && p.onGround && !p.frozen && !p.sitting && (this.controls.pressed.interact || (this.controls.pressed.up && !this.controls.held.attack))) {
       best.action();
     }
   }
@@ -692,7 +692,14 @@ export class WorldScene extends Phaser.Scene {
     this.say([{ who: '', text: TABLETS[n] }]);
   }
 
+  // Senta no banco (cura, salva) — como no Hollow Knight.
+  sitAtBench(key) {
+    const [tx, ty] = key.split(',').map(Number);
+    this.player.sit(tx * TILE + TILE / 2 + 17, (ty + 1) * TILE);
+  }
+
   rest(key) {
+    this.sitAtBench(key);
     this.state.bench = key;
     this.health = this.state.maxHealth;
     this.saveProgress();

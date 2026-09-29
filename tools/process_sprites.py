@@ -122,8 +122,35 @@ def process(name, cfg, preview):
         pv.save(ROOT / 'art-src' / 'preview' / f'{name}.png')
 
 
+def make_sit(preview):
+    """Kio sentado, montado a partir dos quadros parados (não há folha própria):
+    o tronco desce SIT_DROP px e só as botas ficam penduradas sob a túnica,
+    como alguém sentado visto de frente. Mantém a respiração e a chama."""
+    HEM, BOOTS, SIT_DROP = 176, 184, 14
+    w, h = SHEETS['kio_idle']['w'], SHEETS['kio_idle']['h']
+    idle = Image.open(ROOT / 'public' / 'assets' / 'kio_idle.png')
+    out = Image.new('RGBA', idle.size)
+    for i in range(GRID * GRID):
+        box = ((i % GRID) * w, (i // GRID) * h, (i % GRID + 1) * w, (i // GRID + 1) * h)
+        f = idle.crop(box)
+        cell = Image.new('RGBA', (w, h))
+        boots = f.crop((0, BOOTS, w, h))
+        cell.alpha_composite(boots, (0, BOOTS + SIT_DROP - (BOOTS - HEM) - 2))
+        upper = f.crop((0, 0, w, HEM))
+        cell.alpha_composite(upper, (0, SIT_DROP))
+        out.paste(cell, box[:2])
+    out.save(ROOT / 'public' / 'assets' / 'kio_sit.png', optimize=True)
+    print('ok kio_sit: montado a partir de kio_idle')
+    if preview:
+        pv = Image.new('RGBA', out.size, (40, 44, 60, 255))
+        pv.alpha_composite(out)
+        pv.save(ROOT / 'art-src' / 'preview' / 'kio_sit.png')
+
+
 if __name__ == '__main__':
     only = [a for a in sys.argv[1:] if not a.startswith('--')]
     for name, cfg in SHEETS.items():
         if not only or name in only:
             process(name, cfg, '--preview' in sys.argv)
+    if not only or 'kio_sit' in only or 'kio_idle' in only:
+        make_sit('--preview' in sys.argv)

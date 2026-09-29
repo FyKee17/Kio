@@ -43,6 +43,7 @@ export class Player {
     this.attackAnimUntil = 0;
     this.landUntil = 0;
     this.lastStep = 0;
+    this.sitting = false;
   }
 
   get x() {
@@ -73,6 +74,12 @@ export class Player {
   update(time, delta) {
     if (this.dead) return;
     const c = this.controls;
+    if (this.sitting) {
+      // sentado no santuário: qualquer comando levanta
+      const p = c.pressed;
+      if (!this.frozen && (p.left || p.right || p.jump || p.attack || p.dash || c.held.left || c.held.right)) this.stand();
+      else return;
+    }
     const b = this.body;
     const dt = delta / 1000;
     const onGround = this.onGround;
@@ -220,6 +227,33 @@ export class Player {
     this.invulnUntil = now + COMBAT.invulnMs;
     this.healStart = 0;
     this.attack = null;
+  }
+
+  // Senta no banco do santuário. seatX: meio do assento; floorY: chão.
+  sit(seatX, floorY) {
+    this.sitting = true;
+    this.body.setVelocity(0, 0);
+    this.body.reset(seatX, floorY - 31);
+    this.attack = null;
+    this.healStart = 0;
+    const s = this.sprite;
+    s.setFlipX(false);
+    s.angle = 0;
+    s.setAlpha(1);
+    s.play('kio-sit');
+    this.scene.tweens.killTweensOf(s);
+    // desce no assento com um leve "afundar"
+    s.setY(floorY - 2);
+    // assento do banco fica ~35px acima do chão
+    this.scene.tweens.add({ targets: s, y: floorY - 30, duration: 220, ease: 'Back.easeOut' });
+    this.halo.setPosition(seatX - 14, floorY - 100);
+  }
+
+  stand() {
+    this.sitting = false;
+    this.sprite.play('kio-idle');
+    this.squash(0.9, 1.12);
+    this.syncSprite();
   }
 
   isDropping(time) {

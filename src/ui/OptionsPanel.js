@@ -2,6 +2,7 @@ import { WIDTH, HEIGHT } from '../config.js';
 import { TITLE_FONT, BODY_FONT } from '../fonts.js';
 import { getOptions, setOption } from '../options.js';
 import { sfx } from '../audio/sfx.js';
+import { KeysPanel } from './KeysPanel.js';
 
 // Painel de opções (volume da música, dos efeitos e tela cheia).
 // Usado no menu principal e no menu de pausa. Teclado: ↑↓ escolhe, ←→ ajusta,
@@ -22,10 +23,11 @@ export class OptionsPanel {
       { label: 'Música', kind: 'slider', key: 'music' },
       { label: 'Efeitos', kind: 'slider', key: 'sfx' },
       { label: 'Tela cheia', kind: 'toggle' },
+      { label: 'Controles', kind: 'keys' },
       { label: 'Voltar', kind: 'back' },
     ];
     this.rows.forEach((row, i) => {
-      const y = cy - 80 + i * 66;
+      const y = cy - 100 + i * 60;
       row.text = scene.add.text(cx - 200, y, row.label, { fontFamily: TITLE_FONT, fontSize: '26px', color: '#bcd3ee' }).setOrigin(0, 0.5);
       row.text.setInteractive({ useHandCursor: true }).on('pointerover', () => this.select(i)).on('pointerdown', () => this.activate(i));
       items.push(row.text);
@@ -46,6 +48,8 @@ export class OptionsPanel {
       } else if (row.kind === 'toggle') {
         row.value = scene.add.text(cx + 100, y, '', { fontFamily: BODY_FONT, fontSize: '22px', color: '#e6f4ff' }).setOrigin(0.5);
         items.push(row.value);
+      } else if (row.kind === 'keys') {
+        items.push(scene.add.text(cx + 100, y, 'ver e trocar teclas  ›', { fontFamily: BODY_FONT, fontSize: '18px', color: '#8fa9c9' }).setOrigin(0.5));
       }
     });
     this.cursor = scene.add.image(0, 0, 'ui-star').setScale(0.5);
@@ -55,6 +59,7 @@ export class OptionsPanel {
     scene.tweens.add({ targets: this.group, alpha: 1, duration: 200 });
 
     this.onMove = (p) => {
+      if (this.sub) return;
       if (this.dragging && p.isDown) this.dragging(p);
     };
     this.onUp = () => {
@@ -102,12 +107,17 @@ export class OptionsPanel {
       else this.scene.scale.startFullscreen();
       this.scene.time.delayedCall(150, () => this.refresh());
       sfx(this.scene, 'ui_select', { volume: 0.6 });
+    } else if (row.kind === 'keys') {
+      this.sub = new KeysPanel(this.scene, () => {
+        this.sub = null;
+      });
     } else if (row.kind === 'back') {
       this.close();
     }
   }
 
   key(code) {
+    if (this.sub) return; // o painel de teclas está aberto por cima
     const row = this.rows[this.index];
     if (code === 'ArrowUp' || code === 'KeyW') this.select(this.index - 1);
     else if (code === 'ArrowDown' || code === 'KeyS') this.select(this.index + 1);

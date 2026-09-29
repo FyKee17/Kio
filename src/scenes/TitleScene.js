@@ -7,6 +7,7 @@ import { buildTitleArt } from '../gfx/title.js';
 import { OptionsPanel } from '../ui/OptionsPanel.js';
 import { playMusic, stopMusic } from '../audio/music.js';
 import { sfx } from '../audio/sfx.js';
+import { currentKeys, keyLabel } from '../controls.js';
 
 const ADD = Phaser.BlendModes.ADD;
 const MENU_X = 660;
@@ -113,8 +114,8 @@ export class TitleScene extends Phaser.Scene {
     this.selected = -1;
     this.select(this.save ? 1 : 0, true);
 
-    this.add
-      .text(WIDTH / 2, HEIGHT - 14, 'WASD andar · Shift correr · Espaço pular · clique atacar · Q dash · E falar · segure E curar · M mapa · Esc pausa', {
+    this.footer = this.add
+      .text(WIDTH / 2, HEIGHT - 14, this.controlsText(), {
         fontFamily: BODY_FONT,
         fontSize: '15px',
         color: '#7f93b3',
@@ -124,6 +125,12 @@ export class TitleScene extends Phaser.Scene {
 
     this.input.keyboard.on('keydown', (e) => this.onKey(e.code));
     this.cameras.main.fadeIn(900);
+  }
+
+  controlsText() {
+    const k = currentKeys();
+    const l = (a) => keyLabel(k[a]);
+    return `${l('up')}${l('left')}${l('down')}${l('right')} andar · ${l('run')} correr · ${l('jump')} pular · clique atacar · ${l('dash')} dash · ${l('interact')} falar (segure: curar) · ${l('map')} mapa · Esc pausa`;
   }
 
   update(time) {
@@ -188,6 +195,7 @@ export class TitleScene extends Phaser.Scene {
   openOptions() {
     this.overlay = new OptionsPanel(this, () => {
       this.overlay = null;
+      this.footer.setText(this.controlsText());
     });
   }
 

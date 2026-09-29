@@ -32,6 +32,9 @@ npm run build    # versão final em dist/ (hospeda em qualquer lugar estático)
 | mapa | M ou Tab | Mapa |
 | pausa (continuar, opções, menu) | Esc | Menu |
 
+Todas as teclas (menos Esc) podem ser trocadas em **Opções → Controles**; o
+clique esquerdo sempre ataca e as setas sempre andam.
+
 O jogo é desenhado na resolução real da tela (até 2x), então fica nítido em
 monitores grandes e telas de celular. `?res=1` força a resolução base e
 `?canvas` usa o renderizador Canvas (máquinas sem placa de vídeo).

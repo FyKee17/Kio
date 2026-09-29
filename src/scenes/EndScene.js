@@ -1,7 +1,7 @@
 import Phaser from 'phaser';
 import { WIDTH, HEIGHT } from '../config.js';
-import { FONT } from '../fonts.js';
-import { ENDINGS, TOTAL_MEMORIES } from '../data/levels.js';
+import { TITLE_FONT, BODY_FONT } from '../fonts.js';
+import { ENDING, TABLETS } from '../data/world.js';
 import { clearSave } from '../save.js';
 
 export class EndScene extends Phaser.Scene {
@@ -11,57 +11,69 @@ export class EndScene extends Phaser.Scene {
 
   create() {
     this.done = false;
-    const state = this.registry.get('state');
-    const found = state.memories.length;
-    const complete = found >= TOTAL_MEMORIES;
-    const lines = complete ? ENDINGS.complete : ENDINGS.partial;
+    const s = this.registry.get('state');
+    // porcentagem de conclusão: habilidades, corações, tábuas, conversas e o chefe
+    const parts = [
+      s.abilities.dash,
+      s.abilities.doubleJump,
+      s.collected.includes('H:93,5'),
+      s.collected.includes('musgo-heart'),
+      s.bossDefeated,
+      ...Object.keys(TABLETS).map((k) => s.read.includes(k)),
+      ...['m', 'l', 'e'].map((k) => s.talked.includes(k)),
+    ];
+    const pct = Math.round((parts.filter(Boolean).length / parts.length) * 100);
+    const minutes = Math.max(1, Math.round(s.playMs / 60000));
     clearSave();
 
-    this.cameras.main.setBackgroundColor(complete ? '#2a2145' : '#0d0b14');
-    this.cameras.main.fadeIn(800);
+    this.cameras.main.setBackgroundColor('#eaf6ff');
+    this.cameras.main.fadeIn(1500, 255, 255, 255);
+    this.add.image(WIDTH / 2, HEIGHT / 2, 'bg-sky').setAlpha(0);
 
-    const who = this.add.text(WIDTH / 2, HEIGHT / 2 - 50, '', { fontFamily: FONT, fontSize: '24px', color: '#ffd36e' }).setOrigin(0.5);
     const text = this.add
       .text(WIDTH / 2, HEIGHT / 2, '', {
-        fontFamily: FONT,
-        fontSize: '28px',
-        color: '#f4efe6',
+        fontFamily: TITLE_FONT,
+        fontSize: '30px',
+        color: '#16233a',
         align: 'center',
-        wordWrap: { width: WIDTH - 200 },
+        lineSpacing: 10,
+        wordWrap: { width: WIDTH - 260 },
       })
-      .setOrigin(0.5, 0);
+      .setOrigin(0.5);
 
     let i = 0;
     const next = () => {
-      if (i >= lines.length) return this.finish(found, complete);
-      const line = lines[i++];
-      who.setText(line.who);
-      text.setText(line.text).setAlpha(0);
-      this.tweens.add({ targets: [who, text], alpha: 1, duration: 500 });
+      if (i >= ENDING.length) return this.finish(pct, minutes, s.deaths);
+      text.setText(ENDING[i++]).setAlpha(0);
+      this.tweens.add({ targets: text, alpha: 1, duration: 900 });
     };
-    next();
+    this.time.delayedCall(800, next);
 
     const advance = () => {
       if (this.done) return this.scene.start('Title');
-      next();
+      if (text.alpha > 0.8) next();
     };
     this.input.on('pointerdown', advance);
-    this.input.keyboard.on('keydown-SPACE', advance);
-    this.input.keyboard.on('keydown-ENTER', advance);
-    this.input.keyboard.on('keydown-E', advance);
+    for (const k of ['SPACE', 'ENTER', 'Z', 'X', 'E']) this.input.keyboard.on(`keydown-${k}`, advance);
   }
 
-  finish(found, complete) {
+  finish(pct, minutes, deaths) {
     this.done = true;
     this.children.removeAll(true);
+    const bg = this.add.image(WIDTH / 2, HEIGHT / 2, 'bg-sky').setAlpha(0);
+    this.tweens.add({ targets: bg, alpha: 1, duration: 2000 });
     this.add
-      .text(WIDTH / 2, HEIGHT / 2 - 60, complete ? 'Fim.' : 'Fim?', { fontFamily: FONT, fontSize: '72px', fontStyle: 'bold', color: '#f4efe6' })
+      .text(WIDTH / 2, HEIGHT / 2 - 90, 'Fim', { fontFamily: TITLE_FONT, fontSize: '96px', color: '#ffffff' })
+      .setOrigin(0.5)
+      .setShadow(0, 0, '#7cc8ff', 30, false, true);
+    this.add
+      .text(WIDTH / 2, HEIGHT / 2 + 30, `${pct}% da floresta lembrada`, { fontFamily: TITLE_FONT, fontSize: '28px', color: '#ffd98a' })
       .setOrigin(0.5);
     this.add
-      .text(WIDTH / 2, HEIGHT / 2 + 20, `✦ ${found}/${TOTAL_MEMORIES} lampejos recuperados`, { fontFamily: FONT, fontSize: '26px', color: '#9ee7ff' })
+      .text(WIDTH / 2, HEIGHT / 2 + 80, `${minutes} min   ·   ${deaths} ${deaths === 1 ? 'queda' : 'quedas'}`, { fontFamily: BODY_FONT, fontSize: '22px', color: '#bcd3ee' })
       .setOrigin(0.5);
     this.add
-      .text(WIDTH / 2, HEIGHT - 60, 'aperte ESPAÇO ou toque para voltar', { fontFamily: FONT, fontSize: '18px', color: '#8a7fa6' })
+      .text(WIDTH / 2, HEIGHT - 50, 'obrigado por jogar  ·  aperte pulo para voltar', { fontFamily: BODY_FONT, fontSize: '18px', color: '#8fa9c9' })
       .setOrigin(0.5);
   }
 }

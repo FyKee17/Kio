@@ -1,11 +1,16 @@
-export const FONT = '"Pixelify Sans", monospace';
+export const TITLE_FONT = '"Cinzel", Georgia, serif';
+export const BODY_FONT = '"Nunito", "Segoe UI", sans-serif';
 
-// Espera a fonte carregar (no máximo 2s) para os textos não nascerem com a fonte reserva.
+// Espera as fontes carregarem (no máximo 2,5s) para os textos não nascerem com a fonte reserva.
 export function waitForFont() {
   if (!document.fonts?.load) return Promise.resolve();
-  const timeout = new Promise((resolve) => setTimeout(resolve, 2000));
+  const timeout = new Promise((resolve) => setTimeout(resolve, 2500));
   return Promise.race([
-    Promise.all([document.fonts.load('22px "Pixelify Sans"'), document.fonts.load('bold 22px "Pixelify Sans"')]),
+    Promise.all([
+      document.fonts.load('700 32px "Cinzel"'),
+      document.fonts.load('400 22px "Nunito"'),
+      document.fonts.load('700 22px "Nunito"'),
+    ]),
     timeout,
   ]).catch(() => {});
 }

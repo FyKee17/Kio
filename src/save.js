@@ -1,13 +1,27 @@
-const KEY = 'kio-save-v1';
+const KEY = 'kio-save-v2';
 
 export function newState() {
-  return { level: 0, memories: [], talked: [], seenIntro: [] };
+  return {
+    bench: null,           // "tx,ty" do último santuário onde descansou
+    maxHealth: 5,
+    geo: 0,
+    abilities: { dash: false, doubleJump: false },
+    collected: [],         // habilidades, corações e depósitos quebrados
+    talked: [],            // NPCs com quem já conversou
+    read: [],              // tábuas lidas
+    bossDefeated: false,
+    explored: '',          // mapa descoberto (bitset em base64)
+    deaths: 0,
+    playMs: 0,
+  };
 }
 
 export function loadSave() {
   try {
     const raw = localStorage.getItem(KEY);
-    return raw ? { ...newState(), ...JSON.parse(raw) } : null;
+    if (!raw) return null;
+    const data = JSON.parse(raw);
+    return { ...newState(), ...data, abilities: { ...newState().abilities, ...data.abilities } };
   } catch {
     return null;
   }
@@ -27,4 +41,23 @@ export function clearSave() {
   } catch {
     // idem
   }
+}
+
+// Bitset <-> base64 para guardar as partes do mapa já exploradas.
+export function encodeBits(bits) {
+  let s = '';
+  for (let i = 0; i < bits.length; i++) s += String.fromCharCode(bits[i]);
+  return btoa(s);
+}
+
+export function decodeBits(str, length) {
+  const out = new Uint8Array(length);
+  if (!str) return out;
+  try {
+    const s = atob(str);
+    for (let i = 0; i < Math.min(s.length, length); i++) out[i] = s.charCodeAt(i);
+  } catch {
+    // mapa corrompido: começa vazio
+  }
+  return out;
 }

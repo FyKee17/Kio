@@ -1,29 +1,31 @@
 # Arte do Kio
 
-Coloque aqui seus arquivos (PNG com fundo transparente) e aponte para eles em
-`src/data/art.js`, trocando `file: null` por `file: 'assets/nome.png'`.
-O que não tiver arquivo continua com o placeholder, então dá para trocar aos poucos.
+As folhas originais ficam em `art-src/` (5x5 quadros de 256 px, fundo transparente):
 
-Todas as folhas são **uma linha só**, quadros lado a lado, da esquerda para a direita.
-O jogo é desenhado em 2x: um sprite de 16 px aparece com 32 px na tela.
+- `art-src/kio_idle.png`: parado (25 quadros)
+- `art-src/kio_run.png`: correndo com a espada (25 quadros)
 
-| chave        | tamanho do quadro | quadros | o que vai em cada quadro |
-|--------------|-------------------|---------|--------------------------|
-| `kio`        | 16 x 24           | 8       | 0-1 parado, 2-5 correndo, 6 subindo, 7 caindo |
-| `tiles`      | 16 x 16           | 4       | 0 grama (topo), 1 terra, 2 plataforma vazada, 3 espinhos |
-| `memory`     | 12 x 12           | 4       | animação de giro do lampejo |
-| `checkpoint` | 16 x 32           | 2       | 0 apagado, 1 aceso |
-| `door`       | 24 x 32           | 1       | porta de saída |
-| `npc_musgo`  | 20 x 24           | 2       | Vovó Musgo respirando |
-| `npc_lume`   | 12 x 12           | 2       | Lume (vaga-lume) |
-| `npc_eco`    | 20 x 32           | 2       | Eco (estátua) |
-| `npc_raiz`   | 28 x 32           | 2       | Raiz |
-| `bg_sky`     | 480 x 270         | 1       | céu (fundo mais distante) |
-| `bg_far`     | 480 x 270         | 1       | morros distantes, com transparência em cima |
-| `bg_near`    | 480 x 270         | 1       | morros próximos, com transparência em cima |
+Depois de trocar ou adicionar uma folha, rode:
 
-Os fundos se repetem na horizontal, então a borda esquerda precisa casar com a direita.
+```bash
+pip install pillow
+python3 tools/process_sprites.py
+```
 
-Quer mudar tamanho ou número de quadros? Ajuste `frameWidth`, `frameHeight`,
-`frames` e as animações em `src/data/art.js`. A hitbox do Kio fica em
-`src/objects/Player.js` (`body.setSize`).
+O script recorta cada quadro, reduz para 192x192, alinha pelos pés e pelo
+centro do corpo (para o personagem não tremer) e salva aqui em
+`public/assets/`. O jogo mostra o Kio em escala 0.7 (cerca de 90 px de altura).
+
+## Animações que ainda usam quadros emprestados
+
+Hoje pulo, queda, dash e golpe reaproveitam quadros da corrida. Se você mandar
+folhas no mesmo formato (5x5 de 256 px, virado para a direita), elas encaixam direto:
+
+- `kio_jump`: subindo e caindo
+- `kio_attack`: golpe de espada (de lado, para cima e para baixo)
+- `kio_dash`: avanço
+- `kio_hurt`: levando dano
+- `kio_focus`: curando (concentrando a chama)
+
+Para ligar uma folha nova: acrescente o nome em `SHEETS` no script, carregue em
+`src/scenes/BootScene.js` e use em `animate()` de `src/objects/Player.js`.

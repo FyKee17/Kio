@@ -278,8 +278,9 @@ export class WorldScene extends Phaser.Scene {
       if (this.hud.modal) {
         if (c.pressed.jump || c.pressed.attack || c.pressed.interact) this.hud.advance();
         p.frozen = true;
-      } else if (c.pressed.map && !this.busy) {
+      } else if (c.pressed.map && !this.busy && !this.mapOpen) {
         this.toggleMap();
+        return;
       } else if (!this.busy && !this.mapOpen) {
         p.frozen = false;
       }

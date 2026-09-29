@@ -160,12 +160,14 @@ export class Player {
         let dir = 'side';
         if (c.held.up) dir = 'up';
         else if (c.held.down && !onGround) dir = 'down';
-        this.attack = { dir, start: time, until: time + COMBAT.attackActiveMs, hits: new Set() };
+        // o golpe para baixo fica ativo um pouco mais: quicar precisa ser gostoso
+        const active = dir === 'down' ? COMBAT.attackActiveMs * 1.6 : COMBAT.attackActiveMs;
+        this.attack = { dir, start: time, until: time + active, hits: new Set() };
         this.attackReadyAt = time + COMBAT.attackCooldownMs;
         this.scene.onPlayerAttack(this, dir);
       }
     }
-    if (this.attack && time > this.attack.start + 170) this.attack = null;
+    if (this.attack && time > Math.max(this.attack.until, this.attack.start + 170)) this.attack = null;
 
     if (onGround && !this.wasOnGround) {
       this.squash(1.2, 0.84);
@@ -184,7 +186,7 @@ export class Player {
     const x = this.x;
     const y = this.y;
     if (a.dir === 'up') return new Phaser.Geom.Rectangle(x - 42, y - 160, 84, 100);
-    if (a.dir === 'down') return new Phaser.Geom.Rectangle(x - 40, y - 20, 80, 96);
+    if (a.dir === 'down') return new Phaser.Geom.Rectangle(x - 44, y - 20, 88, 110);
     return new Phaser.Geom.Rectangle(this.facing > 0 ? x + 4 : x - 104, y - 84, 100, 80);
   }
 

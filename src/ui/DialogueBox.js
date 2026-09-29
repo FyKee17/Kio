@@ -11,7 +11,8 @@ export class DialogueBox {
     const w = 900;
     const h = 170;
     const x = (WIDTH - w) / 2;
-    const y = 36;
+    const y = 128; // abaixo da vida e dos fragmentos
+    this.boxY = y;
 
     this.container = scene.add.container(0, 0).setDepth(200).setVisible(false);
     const bg = scene.add.graphics();
@@ -75,7 +76,7 @@ export class DialogueBox {
     const line = this.lines[this.index];
     const narrator = !line.who;
     this.nameText.setText(line.who || '');
-    this.bodyText.setY(narrator ? 88 : 98);
+    this.bodyText.setY(this.boxY + (narrator ? 52 : 62));
     this.bodyText.setFontStyle(narrator ? 'italic' : 'normal');
     this.bodyText.setColor(narrator ? '#bcd3ee' : '#e6f4ff');
     this.full = line.text;

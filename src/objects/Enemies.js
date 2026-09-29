@@ -1,5 +1,4 @@
 import Phaser from 'phaser';
-import { TILE } from '../config.js';
 
 // Base: vida, piscar ao levar golpe, empurrão e morte com fragmentos de luz.
 class Enemy extends Phaser.Physics.Arcade.Sprite {
@@ -235,5 +234,3 @@ export class Boss extends Enemy {
 }
 
 export const ENEMY_TYPES = { c: Crawler, f: Flyer, s: Spitter };
-
-export const tileCenter = (tx, ty) => ({ x: tx * TILE + TILE / 2, y: ty * TILE + TILE / 2 });

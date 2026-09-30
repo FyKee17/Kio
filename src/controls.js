@@ -17,6 +17,10 @@ export const DEFAULT_KEYS = {
   run: 'SHIFT',
   interact: 'E',
   map: 'M',
+  skill1: 'ONE',
+  skill2: 'TWO',
+  skill3: 'THREE',
+  element: 'R',
 };
 
 export const ACTION_LABELS = {
@@ -30,6 +34,10 @@ export const ACTION_LABELS = {
   run: 'Correr',
   interact: 'Interagir / curar',
   map: 'Mapa',
+  skill1: 'Habilidade 1',
+  skill2: 'Habilidade 2',
+  skill3: 'Habilidade 3',
+  element: 'Trocar elemento',
 };
 
 // teclas extras fixas (não trocáveis)

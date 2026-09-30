@@ -9,8 +9,12 @@ export const TRACKS = {
   boss: 'assets/music/cursed_spectral_knight.mp3',
 };
 
+// Faixas que ainda não chegaram tocam outra no lugar (troque em TRACKS quando
+// tiver o arquivo: ex. ruins: 'assets/music/ruinas.mp3').
+const FALLBACK = { ruins: 'world', worm: 'boss', knight: 'boss' };
+
 // volume de cada faixa antes do volume geral de música
-const MIX = { menu: 0.8, world: 0.6, boss: 0.75 };
+const MIX = { menu: 0.8, world: 0.6, boss: 0.75, ruins: 0.6, worm: 0.75, knight: 0.75 };
 
 let game = null;
 let current = null; // { name, sound }
@@ -37,6 +41,7 @@ export function initMusic(g) {
 }
 
 export function playMusic(name, { fadeMs = 1500 } = {}) {
+  if (game && !game.cache.audio.exists(`music-${name}`) && FALLBACK[name]) name = FALLBACK[name];
   if (!game || current?.name === name) return;
   const key = `music-${name}`;
   if (!game.cache.audio.exists(key)) return;
@@ -45,6 +50,8 @@ export function playMusic(name, { fadeMs = 1500 } = {}) {
   const sound = game.sound.add(key, { loop: true, volume: 0 });
   current = { name, sound };
   const start = () => {
+    // outra música pode ter sido pedida antes do navegador liberar o áudio
+    if (current?.sound !== sound) return;
     sound.play();
     fade(sound, MIX[name] * getOptions().music, fadeMs);
   };

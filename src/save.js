@@ -9,7 +9,15 @@ export function newState() {
     collected: [],         // habilidades, corações e depósitos quebrados
     talked: [],            // NPCs com quem já conversou
     read: [],              // tábuas lidas
-    bossDefeated: false,
+    bossDefeated: false,   // Ender
+    element: null,         // 'wind' | 'fire' (elemento em uso)
+    elements: [],          // elementos que o Kio já tem
+    skills: 0,             // quantas habilidades do elemento já liberou (0 a 3)
+    gateOpen: false,       // portão das Ruínas
+    wormDefeated: false,
+    knightDefeated: false,
+    shade: null,           // { x, y, geo }: fragmentos deixados onde morreu
+    mapW: 0,               // largura do mapa quando o 'explored' foi salvo
     explored: '',          // mapa descoberto (bitset em base64)
     deaths: 0,
     playMs: 0,

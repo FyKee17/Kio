@@ -130,7 +130,7 @@ export class TitleScene extends Phaser.Scene {
   controlsText() {
     const k = currentKeys();
     const l = (a) => keyLabel(k[a]);
-    return `${l('up')}${l('left')}${l('down')}${l('right')} andar · ${l('run')} correr · ${l('jump')} pular · clique atacar · ${l('dash')} dash · ${l('interact')} falar (segure: curar) · ${l('map')} mapa · Esc pausa`;
+    return `${l('up')}${l('left')}${l('down')}${l('right')} andar · ${l('run')} correr · ${l('jump')} pular · clique atacar · ${l('dash')} dash · ${l('interact')} falar (segure: curar) · ${l('map')} mapa · ${l('skill1')}${l('skill2')}${l('skill3')} habilidades · Esc pausa`;
   }
 
   update(time) {

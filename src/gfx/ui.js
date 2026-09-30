@@ -239,25 +239,30 @@ function buildBossBar(scene) {
     ctx.globalCompositeOperation = 'source-over';
   });
   // enchimento (é recortado conforme a vida)
-  hiRes(scene, 'bossbar-fill', W - 150, 14, (ctx, w, h) => {
-    const g = ctx.createLinearGradient(0, 0, 0, h);
-    g.addColorStop(0, '#f0c8ff');
-    g.addColorStop(0.35, '#b45cff');
-    g.addColorStop(1, '#4a1686');
-    ctx.fillStyle = g;
-    ctx.fillRect(0, 0, w, h);
-    // rachaduras de energia
-    ctx.strokeStyle = 'rgba(255,240,255,0.5)';
-    ctx.lineWidth = 1;
-    for (let x = 12; x < w; x += 37) {
-      ctx.beginPath();
-      ctx.moveTo(x, 0);
-      ctx.lineTo(x + 6, h * 0.45);
-      ctx.lineTo(x + 2, h * 0.6);
-      ctx.lineTo(x + 9, h);
-      ctx.stroke();
-    }
-  });
+  // (uma cor por chefe: Ender roxo, Minhoca âmbar, Cavaleiro dourado)
+  const fill = (key, hi, mid, lo) =>
+    hiRes(scene, key, W - 150, 14, (ctx, w, h) => {
+      const g = ctx.createLinearGradient(0, 0, 0, h);
+      g.addColorStop(0, hi);
+      g.addColorStop(0.35, mid);
+      g.addColorStop(1, lo);
+      ctx.fillStyle = g;
+      ctx.fillRect(0, 0, w, h);
+      // rachaduras de energia
+      ctx.strokeStyle = 'rgba(255,245,240,0.5)';
+      ctx.lineWidth = 1;
+      for (let x = 12; x < w; x += 37) {
+        ctx.beginPath();
+        ctx.moveTo(x, 0);
+        ctx.lineTo(x + 6, h * 0.45);
+        ctx.lineTo(x + 2, h * 0.6);
+        ctx.lineTo(x + 9, h);
+        ctx.stroke();
+      }
+    });
+  fill('bossbar-fill', '#f0c8ff', '#b45cff', '#4a1686');
+  fill('bossbar-fill-worm', '#ffe8c0', '#ff9a3a', '#7a2a0a');
+  fill('bossbar-fill-knight', '#fff4d8', '#e8b060', '#6a4018');
   hiRes(scene, 'bossbar-trail', W - 150, 14, (ctx, w, h) => {
     ctx.fillStyle = '#ffe6f4';
     ctx.fillRect(0, 0, w, h);

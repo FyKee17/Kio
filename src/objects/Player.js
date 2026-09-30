@@ -21,6 +21,7 @@ export class Player {
     this.halo = scene.add.image(x, y, 'glow').setBlendMode(Phaser.BlendModes.ADD).setTint(0x5fb4ff).setAlpha(0.35).setScale(1.6).setDepth(19);
     this.sprite = scene.add.sprite(x, y, 'kio_idle', 0).setOrigin(0.5, FEET).setScale(SCALE).setDepth(20);
     this.sprite.play('kio-idle');
+    this.scale = SCALE;
 
     this.facing = 1;
     this.coyote = 0;
@@ -44,6 +45,41 @@ export class Player {
     this.landUntil = 0;
     this.lastStep = 0;
     this.sitting = false;
+    this.skin = ''; // '' (azul), '@wind' ou '@fire'
+    this.ghostTint = 0x7cc8ff;
+    this.windPush = 0; // vento da tempestade (px/s somados à corrida)
+    this.lockUntil = 0; // conjurando: sem controle
+    this.floating = false; // no meio de uma habilidade que segura o Kio no ar
+  }
+
+  // Nome da animação/folha na skin do elemento atual.
+  anim(key) {
+    return key + this.skin;
+  }
+
+  tex(key) {
+    return this.skin ? `${key}_${this.skin.slice(1)}` : key;
+  }
+
+  setElement(name, def) {
+    this.skin = name ? `@${name}` : '';
+    this.ghostTint = def ? def.color : 0x7cc8ff;
+    this.halo.setTint(def ? def.color : 0x5fb4ff);
+    const cur = this.sprite.anims.currentAnim?.key;
+    if (cur) this.sprite.play(this.anim(cur.split('@')[0]));
+  }
+
+  // Corrente de vapor: empurra para cima até perto do teto do jato.
+  updraft(delta, top) {
+    const b = this.body;
+    const dt = delta / 1000;
+    const room = this.y - 70 - top;
+    // sobe rápido até perto do teto do jato e fica flutuando lá
+    const target = room > 60 ? -600 : room > 0 ? -140 : 60;
+    const v = b.velocity.y;
+    b.setVelocityY(v > target ? Math.max(target, v - 5200 * dt) : Math.min(target, v + 3200 * dt));
+    this.airJumpUsed = false;
+    this.airDashUsed = false;
   }
 
   get x() {
@@ -84,7 +120,7 @@ export class Player {
     const dt = delta / 1000;
     const onGround = this.onGround;
     const abilities = this.scene.state.abilities;
-    const control = !this.frozen && time >= this.hurtUntil;
+    const control = !this.frozen && time >= this.hurtUntil && time >= this.lockUntil;
 
     if (onGround) {
       this.coyote = PHYS.coyoteMs;
@@ -112,7 +148,7 @@ export class Player {
       b.setVelocity(this.facing * PHYS.dashSpeed, 0);
       if (time - this.lastGhost > 30) this.ghost(time);
     } else {
-      if (!b.allowGravity) {
+      if (!b.allowGravity && !this.floating) {
         b.setAllowGravity(true);
         b.setVelocityX(this.facing * PHYS.runSpeed * 0.6);
       }
@@ -136,7 +172,8 @@ export class Player {
         if (dir !== 0) accel = onGround ? PHYS.accel : PHYS.airAccel;
         else accel = onGround ? PHYS.decel : PHYS.airAccel * 0.6;
         const speed = c.held.run ? PHYS.runSpeed : PHYS.walkSpeed;
-        b.setVelocityX(approach(b.velocity.x, dir * speed, accel * dt));
+        const push = this.windPush * (onGround ? 1 : 1.4);
+        if (!this.floating) b.setVelocityX(approach(b.velocity.x, dir * speed + push, accel * dt));
       }
       if (dir !== 0 && !this.attack) this.facing = dir;
 
@@ -179,7 +216,7 @@ export class Player {
         this.attackReadyAt = time + COMBAT.attackCooldownMs;
         this.scene.onPlayerAttack(this, dir);
         const anim = { side: 'kio-slash', up: 'kio-slash-up', down: 'kio-slash-down' }[dir];
-        this.sprite.play(anim);
+        this.sprite.play(this.anim(anim));
         this.attackAnimUntil = time + (dir === 'side' ? 210 : 190);
       }
     }
@@ -242,7 +279,7 @@ export class Player {
     s.setFlipX(false);
     s.angle = 0;
     s.setAlpha(1);
-    s.play('kio-sit');
+    s.play(this.anim('kio-sit'));
     this.scene.tweens.killTweensOf(s);
     // desce no assento com um leve "afundar"
     s.setY(floorY - 2);
@@ -253,7 +290,7 @@ export class Player {
 
   stand() {
     this.sitting = false;
-    this.sprite.play('kio-idle');
+    this.sprite.play(this.anim('kio-idle'));
     this.squash(0.9, 1.12);
     this.syncSprite();
   }
@@ -270,24 +307,25 @@ export class Player {
     const vx = Math.abs(b.velocity.x);
     s.setFlipX(this.facing < 0);
     let tilt = 0;
+    const A = (k) => this.anim(k);
     if (this.dashing) {
       s.anims.stop();
-      s.setTexture('kio_run', 3);
+      s.setTexture(this.tex('kio_run'), 3);
       tilt = 6;
     } else if (time < this.hurtUntil) {
       s.anims.stop();
-      s.setTexture('kio_jump', 4);
+      s.setTexture(this.tex('kio_jump'), 4);
       tilt = -8;
-    } else if (time < this.attackAnimUntil) {
-      // a animação de golpe já está tocando
+    } else if (time < this.attackAnimUntil || this.floating) {
+      // a animação de golpe (ou de habilidade) já está tocando
     } else if (!onGround) {
-      if (b.velocity.y < -160) s.play('kio-rise', true);
-      else if (b.velocity.y < 160) s.play('kio-apex', true);
-      else s.play('kio-fall', true);
+      if (b.velocity.y < -160) s.play(A('kio-rise'), true);
+      else if (b.velocity.y < 160) s.play(A('kio-apex'), true);
+      else s.play(A('kio-fall'), true);
     } else if (time < this.landUntil && vx < 60) {
-      s.play('kio-land', true);
+      s.play(A('kio-land'), true);
     } else if (vx > 200) {
-      s.play('kio-run', true);
+      s.play(A('kio-run'), true);
       // a passada acompanha a velocidade real (acelerando/freando não "patina")
       s.anims.timeScale = Phaser.Math.Clamp(vx / PHYS.runSpeed, 0.75, 1);
       if (time - this.lastStep > 300) {
@@ -295,11 +333,11 @@ export class Player {
         this.scene.onPlayerStep?.(this);
       }
     } else if (vx > 25) {
-      s.play('kio-walk', true);
+      s.play(A('kio-walk'), true);
     } else {
-      s.play('kio-idle', true);
+      s.play(A('kio-idle'), true);
     }
-    if (s.anims.currentAnim?.key !== 'kio-run') s.anims.timeScale = 1;
+    if (s.anims.currentAnim?.key !== A('kio-run')) s.anims.timeScale = 1;
     s.angle = tilt * this.facing;
     // piscar enquanto invulnerável depois de levar dano
     const inv = time < this.invulnUntil;
@@ -330,7 +368,7 @@ export class Player {
       .setOrigin(s.originX, s.originY)
       .setScale(s.scaleX, s.scaleY)
       .setFlipX(s.flipX)
-      .setTint(0x7cc8ff)
+      .setTint(this.ghostTint)
       .setBlendMode(Phaser.BlendModes.ADD)
       .setAlpha(0.55)
       .setDepth(18);

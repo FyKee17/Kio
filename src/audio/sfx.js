@@ -240,6 +240,105 @@ const RECIPES = {
       0.3,
       2,
     ),
+  // Ruínas e elementos
+  bow_draw: () => env(mix([osc(0.45, (t) => 180 + t * 260, 'saw'), 0.15], [filter(noise(0.45), 'band', (t) => 800 + t * 1800, 6), 0.6]), 0.2, 0.08, 0.15),
+  arrow: () => env(filter(noise(0.22), 'band', (t) => 3200 - t * 6000, 3), 0.005, 0.06),
+  wind_slash: () =>
+    mix(
+      [env(filter(noise(0.4), 'band', (t) => 5200 - t * 9000, 2.2), 0.005, 0.1), 1],
+      [env(filter(noise(0.4), 'band', (t) => 900 + t * 600, 1.2), 0.02, 0.12), 0.5],
+    ),
+  gust: () =>
+    mix(
+      [env(filter(noise(1.3), 'band', (t) => 300 + Math.sin(t * 5) * 200 + t * 600, 0.9), 0.05, 0.45), 1],
+      [env(filter(noise(1.3), 'band', (t) => 2500 + Math.sin(t * 13) * 900, 3), 0.1, 0.4), 0.35],
+      [env(osc(1.3, (t) => 60 + t * 20), 0.02, 0.35), 0.4],
+    ),
+  wind_long: () => {
+    const x = filter(noise(3.5), 'band', (t) => 400 + Math.sin(t * 2.2) * 250 + Math.sin(t * 7) * 120, 1.1);
+    for (let i = 0; i < x.length; i++) {
+      const t = i / SR;
+      x[i] *= Math.min(1, t / 0.4) * Math.min(1, (3.5 - t) / 1.4) * (0.7 + 0.3 * Math.sin(t * 6));
+    }
+    return mix([x, 1], [env(filter(noise(3.5), 'band', (t) => 3000 + Math.sin(t * 9) * 1200, 5), 0.3, 1.2), 0.3]);
+  },
+  tornado: () => {
+    const x = filter(noise(1.1), 'band', (t) => 500 + t * 1400 + Math.sin(t * 40) * 200, 1.5);
+    for (let i = 0; i < x.length; i++) x[i] *= Math.min(1, (i / SR) / 0.5) * (0.6 + 0.4 * Math.sin((i / SR) * 55));
+    return x;
+  },
+  fireball: () =>
+    mix(
+      [env(filter(noise(0.5), 'low', (t) => 3000 - t * 4000), 0.01, 0.15), 1],
+      [env(osc(0.5, (t) => 220 - t * 200, 'saw'), 0.01, 0.12), 0.25],
+      [crackle(0.4), 0.3],
+    ),
+  explode: () =>
+    drive(
+      mix(
+        [env(osc(0.8, (t) => 90 * Math.exp(-t * 4) + 35), 0.001, 0.22), 1],
+        [env(filter(noise(0.8), 'low', (t) => 3500 * Math.exp(-t * 5) + 200), 0.001, 0.2), 1],
+        [crackle(0.6), 0.5],
+      ),
+      2,
+    ),
+  ignite: () =>
+    mix(
+      [env(filter(noise(0.9), 'band', (t) => 400 + t * 3000, 1.2), 0.08, 0.3), 1],
+      [crackle(0.9), 0.6],
+      [env(osc(0.9, (t) => 110 + t * 180, 'tri'), 0.05, 0.3), 0.3],
+    ),
+  burn: () => env(mix([crackle(0.2), 1], [filter(noise(0.2), 'band', 1800, 2), 0.3]), 0.002, 0.06),
+  clang: () =>
+    mix(
+      [bell(620, 0.8, 0.18), 0.8],
+      [bell(1350, 0.8, 0.12), 0.6],
+      [bell(2270, 0.6, 0.08), 0.4],
+      [env(filter(noise(0.06), 'high', 3000), 0.001, 0.012), 0.8],
+    ),
+  steam_warn: () => env(filter(noise(0.7), 'high', (t) => 3000 + t * 2000), 0.3, 0.15, 0.2),
+  steam: () => env(filter(noise(1.3), 'band', (t) => 5000 - t * 1500, 0.8), 0.02, 0.5, 0.4),
+  rumble: () => env(filter(mix([noise(1.2), 1], [osc(1.2, (t) => 38 + Math.sin(t * 30) * 5), 0.8]), 'low', 180), 0.2, 0.4, 0.3),
+  worm_burst: () =>
+    drive(
+      mix(
+        [env(filter(noise(0.7), 'low', (t) => 2400 * Math.exp(-t * 4) + 150), 0.002, 0.18), 1],
+        [env(osc(0.7, (t) => 70 * Math.exp(-t * 3) + 30), 0.002, 0.2), 0.8],
+        [env(filter(noise(0.7), 'band', 900, 1), 0.01, 0.2), 0.4],
+      ),
+      2,
+    ),
+  worm_roar: () =>
+    drive(
+      mix(
+        [env(osc(2, (t) => 55 + Math.sin(t * 17) * 10 + t * 12, 'saw'), 0.2, 0.8), 1],
+        [env(filter(noise(2), 'band', (t) => 300 + Math.sin(t * 7) * 150, 1.5), 0.15, 0.8), 1],
+        [env(osc(2, (t) => 110 + Math.sin(t * 23) * 20, 'square'), 0.3, 0.6), 0.25],
+        [env(filter(noise(2), 'high', 2500), 0.2, 0.5), 0.2],
+      ),
+      3,
+    ),
+  knight_roar: () =>
+    drive(
+      mix(
+        [env(osc(1.8, (t) => 85 + Math.sin(t * 26) * 9 - t * 10, 'saw'), 0.12, 0.7), 0.9],
+        [env(filter(noise(1.8), 'band', (t) => 700 + Math.sin(t * 11) * 300, 2.5), 0.1, 0.6), 0.9],
+        [env(osc(1.8, 42), 0.05, 0.8), 0.6],
+      ),
+      2.8,
+    ),
+  transform: () =>
+    echo(
+      mix(
+        ...[196, 247, 294, 392, 494, 587, 784].map((f, i) => [env(osc(3.2, (t) => f * (1 + t * 0.02), 'tri'), 0.3 + i * 0.12, 1.2), 0.28]),
+        [env(filter(noise(3.2), 'band', (t) => 600 + t * 3000, 2), 1.4, 0.6), 0.5],
+        [env(osc(3.2, (t) => 55 + t * 30), 0.8, 1.2), 0.4],
+      ),
+      0.28,
+      0.3,
+      3,
+    ),
+  shade: () => echo(mix([env(osc(1.4, (t) => 140 - t * 40, 'tri'), 0.3, 0.5), 0.6], [env(filter(noise(1.4), 'band', 700, 4), 0.3, 0.5), 0.5]), 0.3, 0.4, 3),
 };
 
 // estalos elétricos: picos aleatórios com filtro agudo

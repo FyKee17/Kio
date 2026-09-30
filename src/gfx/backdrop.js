@@ -16,6 +16,173 @@ export function buildBackdrop(scene) {
   canvasTexture(scene, 'bg-rays', WIDTH, HEIGHT, drawRays);
   canvasTexture(scene, 'fg-leaves', LAYER_W, HEIGHT, drawForeground);
   canvasTexture(scene, 'vignette', WIDTH, HEIGHT, drawVignette);
+  // Ruínas / deserto ao entardecer
+  canvasTexture(scene, 'bgd-sky', WIDTH, HEIGHT, drawDesertSky);
+  canvasTexture(scene, 'bgd-far', LAYER_W, LAYER_H, (ctx, w, h) => drawDunes(ctx, w, h, dunesFar));
+  canvasTexture(scene, 'bgd-mid', LAYER_W, LAYER_H, (ctx, w, h) => drawDunes(ctx, w, h, dunesMid));
+  canvasTexture(scene, 'bgd-haze', LAYER_W, 512, drawHaze);
+  canvasTexture(scene, 'sand-storm', LAYER_W, 512, drawStorm);
+}
+
+function drawDesertSky(ctx, w, h) {
+  const g = ctx.createLinearGradient(0, 0, 0, h);
+  g.addColorStop(0, '#140c24');
+  g.addColorStop(0.35, '#3a1c3e');
+  g.addColorStop(0.62, '#8a3c3a');
+  g.addColorStop(0.82, '#e0784a');
+  g.addColorStop(1, '#ffc27a');
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, w, h);
+  const r = rng(71);
+  for (let i = 0; i < 120; i++) {
+    const y = r() * h * 0.4;
+    ctx.fillStyle = `rgba(255,236,220,${r.range(0.2, 0.8) * (1 - y / (h * 0.4))})`;
+    ctx.beginPath();
+    ctx.arc(r() * w, y, r.range(0.5, 1.3), 0, Math.PI * 2);
+    ctx.fill();
+  }
+  // sol enorme meio afundado no horizonte
+  const sx = w * 0.3;
+  const sy = h * 0.8;
+  glow(ctx, sx, sy, 520, '#ff9a5a', 0.35);
+  glow(ctx, sx, sy, 220, '#ffd9a0', 0.55);
+  const sg = ctx.createRadialGradient(sx, sy - 40, 10, sx, sy, 130);
+  sg.addColorStop(0, '#fff3d0');
+  sg.addColorStop(1, '#ffae62');
+  ctx.fillStyle = sg;
+  ctx.beginPath();
+  ctx.arc(sx, sy, 130, 0, Math.PI * 2);
+  ctx.fill();
+  // faixas de nuvem na frente do sol
+  for (let i = 0; i < 7; i++) {
+    const y = h * r.range(0.55, 0.85);
+    ctx.fillStyle = `rgba(90,30,50,${r.range(0.25, 0.5)})`;
+    ctx.beginPath();
+    ctx.ellipse(r() * w, y, r.range(160, 380), r.range(6, 14), 0, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  sparkle(ctx, w * 0.78, h * 0.14, 10);
+  sparkle(ctx, w * 0.62, h * 0.06, 6);
+}
+
+const dunesFar = { seed: 41, base: 0.62, amp: 70, color: '#6a2c34', rim: 'rgba(255,170,120,0.35)', ruins: 5, ruinColor: '#4e2030', haze: 'rgba(255,150,110,0.25)' };
+const dunesMid = { seed: 57, base: 0.76, amp: 90, color: '#2e1420', rim: 'rgba(255,190,130,0.45)', ruins: 4, ruinColor: '#200c16', haze: 'rgba(120,50,50,0.2)' };
+
+function drawDunes(ctx, w, h, p) {
+  const r = rng(p.seed);
+  const k1 = r.int(2, 3);
+  const k2 = r.int(5, 7);
+  const ph = r() * 6;
+  const yAt = (x) => h * p.base - Math.sin((x / w) * Math.PI * 2 * k1 + ph) * p.amp - Math.sin((x / w) * Math.PI * 2 * k2) * p.amp * 0.3;
+  // ruínas distantes (arcos, torres, colunas) atrás das dunas
+  for (let i = 0; i < p.ruins; i++) {
+    const x = ((i + r.range(0.1, 0.9)) / p.ruins) * w;
+    for (const off of [-w, 0, w]) ruinSilhouette(ctx, x + off, yAt(x) + 20, p, rng(p.seed * 100 + i));
+  }
+  ctx.fillStyle = p.color;
+  ctx.beginPath();
+  ctx.moveTo(0, h);
+  for (let x = 0; x <= w; x += 8) ctx.lineTo(x, yAt(x));
+  ctx.lineTo(w, h);
+  ctx.fill();
+  // crista iluminada das dunas
+  ctx.strokeStyle = p.rim;
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  for (let x = 0; x <= w; x += 8) (x ? ctx.lineTo : ctx.moveTo).call(ctx, x, yAt(x) + 1);
+  ctx.stroke();
+  const g = ctx.createLinearGradient(0, h * 0.4, 0, h);
+  g.addColorStop(0, 'rgba(0,0,0,0)');
+  g.addColorStop(1, p.haze);
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, w, h);
+}
+
+function ruinSilhouette(ctx, x, base, p, r) {
+  ctx.fillStyle = p.ruinColor;
+  const kind = r.int(0, 2);
+  if (kind === 0) {
+    // arco partido
+    const W = r.range(120, 200);
+    const H = r.range(160, 260);
+    ctx.beginPath();
+    ctx.moveTo(x - W / 2, base);
+    ctx.lineTo(x - W / 2, base - H);
+    ctx.lineTo(x + W * 0.1, base - H - r.range(0, 30));
+    ctx.lineTo(x + W * 0.05, base - H + 30);
+    ctx.lineTo(x - W / 2 + 34, base - H + 34);
+    ctx.lineTo(x - W / 2 + 34, base);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.moveTo(x + W / 2, base);
+    ctx.lineTo(x + W / 2, base - H * r.range(0.4, 0.8));
+    ctx.lineTo(x + W / 2 - 34, base - H * 0.5);
+    ctx.lineTo(x + W / 2 - 34, base);
+    ctx.fill();
+  } else if (kind === 1) {
+    // torre com janelas
+    const W = r.range(60, 90);
+    const H = r.range(260, 420);
+    ctx.fillRect(x - W / 2, base - H, W, H);
+    ctx.beginPath();
+    ctx.moveTo(x - W / 2 - 10, base - H);
+    ctx.lineTo(x, base - H - 60);
+    ctx.lineTo(x + W / 2 + 10, base - H);
+    ctx.fill();
+    ctx.fillStyle = 'rgba(255,190,120,0.35)';
+    for (let i = 0; i < 3; i++) ctx.fillRect(x - 5, base - H + 40 + i * 70, 10, 22);
+  } else {
+    // fileira de colunas
+    const n = r.int(3, 5);
+    for (let i = 0; i < n; i++) {
+      const H = r.range(120, 240);
+      ctx.fillRect(x + i * 46 - 12, base - H, 24, H);
+      ctx.fillRect(x + i * 46 - 18, base - H - 10, 36, 10);
+    }
+  }
+}
+
+function drawHaze(ctx, w, h) {
+  const r = rng(15);
+  for (let i = 0; i < 36; i++) {
+    const x = r() * w;
+    const y = r.range(0.35, 0.85) * h;
+    const rx = r.range(160, 360);
+    for (const off of [-w, 0, w]) {
+      const g = ctx.createRadialGradient(x + off, y, 0, x + off, y, rx);
+      g.addColorStop(0, 'rgba(255,190,140,0.10)');
+      g.addColorStop(1, 'rgba(255,190,140,0)');
+      ctx.fillStyle = g;
+      ctx.save();
+      ctx.translate(x + off, y);
+      ctx.scale(1, 0.3);
+      ctx.translate(-(x + off), -y);
+      ctx.fillRect(x + off - rx, y - rx, rx * 2, rx * 2);
+      ctx.restore();
+    }
+  }
+}
+
+// Faixas de areia soprada (tempestade), repetível na horizontal.
+function drawStorm(ctx, w, h) {
+  const r = rng(99);
+  for (let i = 0; i < 70; i++) {
+    const y = r() * h;
+    const len = r.range(200, 700);
+    const x = r() * w;
+    for (const off of [-w, 0, w]) {
+      const g = ctx.createLinearGradient(x + off, 0, x + off + len, 0);
+      g.addColorStop(0, 'rgba(230,170,110,0)');
+      g.addColorStop(0.5, `rgba(230,170,110,${r.range(0.08, 0.22)})`);
+      g.addColorStop(1, 'rgba(230,170,110,0)');
+      ctx.fillStyle = g;
+      ctx.fillRect(x + off, y, len, r.range(3, 16));
+    }
+  }
+  for (let i = 0; i < 500; i++) {
+    ctx.fillStyle = `rgba(255,220,170,${r.range(0.2, 0.6)})`;
+    ctx.fillRect(r() * w, r() * h, r.range(2, 6), 1.2);
+  }
 }
 
 function drawSky(ctx, w, h) {

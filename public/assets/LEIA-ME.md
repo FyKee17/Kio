@@ -37,3 +37,12 @@ quais quadros entram em cada animação em `src/data/anims.js`.
 
 Animações que ainda aproveitam outros quadros: dash (usa um quadro da corrida),
 dano (quadro do pulo) e golpe para baixo (quadros da queda).
+
+## Skins de elemento e inimigos das Ruínas
+
+- As skins verde (Vento) e laranja (Fogo) do Kio são geradas quando o jogo
+  carrega, repintando os tons azuis das folhas acima (`src/gfx/skins.js`).
+  Se você mandar folhas próprias de cada skin, elas entram no lugar.
+- Pedrisco, arqueiro, escudeiro, a Minhoca, o Cavaleiro das Ruínas, o redemoinho,
+  o altar e o portão das Ruínas são desenhados em código (`src/gfx/ruins.js`).
+  Dá para trocar qualquer um por uma folha sua do mesmo jeito que os outros.

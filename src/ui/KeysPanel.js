@@ -16,7 +16,7 @@ export class KeysPanel {
     const cy = HEIGHT / 2;
     const items = [];
     items.push(scene.add.rectangle(cx, cy, WIDTH, HEIGHT, 0x02040a, 0.85).setInteractive());
-    items.push(scene.add.image(cx, cy, 'ui-panel').setScale(0.5, 0.74));
+    items.push(scene.add.image(cx, cy, 'ui-panel').setDisplaySize(900, 620));
     items.push(scene.add.text(cx, cy - 262, 'Controles', { fontFamily: TITLE_FONT, fontSize: '36px', color: '#eef7ff', padding: { x: 20, y: 20 } }).setOrigin(0.5).setShadow(0, 0, '#7cc8ff', 14, false, true));
 
     const actions = Object.keys(DEFAULT_KEYS);
@@ -26,17 +26,21 @@ export class KeysPanel {
       { kind: 'back', label: 'Voltar' },
     ];
     this.rows.forEach((row, i) => {
-      const y = cy - 210 + i * 36 + (row.kind !== 'key' ? 10 : 0);
-      row.text = scene.add.text(cx - 210, y, row.label, { fontFamily: TITLE_FONT, fontSize: '21px', color: '#bcd3ee' }).setOrigin(0, 0.5);
+      // duas colunas de teclas; "Restaurar" e "Voltar" embaixo
+      const half = Math.ceil(actions.length / 2);
+      const col = row.kind === 'key' && i >= half ? 1 : 0;
+      const y = row.kind === 'key' ? cy - 200 + (i % half) * 44 : cy + 150 + (i - actions.length) * 44;
+      const x0 = row.kind === 'key' ? cx - 380 + col * 400 : cx - 110;
+      row.text = scene.add.text(x0, y, row.label, { fontFamily: TITLE_FONT, fontSize: '21px', color: '#bcd3ee' }).setOrigin(0, 0.5);
       row.text.setInteractive({ useHandCursor: true }).on('pointerover', () => !this.waiting && this.select(i)).on('pointerdown', () => this.activate(i));
       items.push(row.text);
       if (row.kind === 'key') {
-        row.value = scene.add.text(cx + 170, y, '', { fontFamily: BODY_FONT, fontSize: '19px', fontStyle: '700', color: '#e6f4ff' }).setOrigin(0.5);
+        row.value = scene.add.text(x0 + 290, y, '', { fontFamily: BODY_FONT, fontSize: '19px', fontStyle: '700', color: '#e6f4ff' }).setOrigin(0.5);
         row.value.setInteractive({ useHandCursor: true }).on('pointerdown', () => this.activate(i));
         items.push(row.value);
       }
     });
-    this.hint = scene.add.text(cx, cy + 250, '', { fontFamily: BODY_FONT, fontSize: '16px', color: '#7f93b3' }).setOrigin(0.5);
+    this.hint = scene.add.text(cx, cy + 272, '', { fontFamily: BODY_FONT, fontSize: '16px', color: '#7f93b3' }).setOrigin(0.5);
     items.push(this.hint);
     this.cursor = scene.add.image(0, 0, 'ui-star').setScale(0.45);
     items.push(this.cursor);
@@ -94,8 +98,11 @@ export class KeysPanel {
       this.refresh();
       return;
     }
+    const half = Math.ceil(Object.keys(DEFAULT_KEYS).length / 2);
     if (e.code === 'ArrowUp') this.select(this.index - 1);
     else if (e.code === 'ArrowDown') this.select(this.index + 1);
+    else if (e.code === 'ArrowRight' && this.index < half) this.select(this.index + half);
+    else if (e.code === 'ArrowLeft' && this.index >= half && this.index < half * 2) this.select(this.index - half);
     else if (e.code === 'Enter' || e.code === 'Space') this.activate();
     else if (e.code === 'Escape') this.close();
   }

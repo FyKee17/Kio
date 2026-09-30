@@ -11,6 +11,8 @@ import { buildSfx } from '../audio/sfx.js';
 import { buildUi } from '../gfx/ui.js';
 import { buildFx } from '../gfx/fx.js';
 import { TRACKS, initMusic } from '../audio/music.js';
+import { buildRuinsArt } from '../gfx/ruins.js';
+import { buildSkins, createSkinAnims } from '../gfx/skins.js';
 
 // Carrega as folhas de arte (Kio, Vovó, besouro, mariposa) e gera o resto em código.
 export class BootScene extends Phaser.Scene {
@@ -44,6 +46,8 @@ export class BootScene extends Phaser.Scene {
     buildUi(this);
     buildFx(this);
     buildBackdrop(this);
+    buildRuinsArt(this);
+    buildSkins(this);
     this.progress(0.55);
     await new Promise((r) => setTimeout(r, 0));
 
@@ -63,5 +67,14 @@ export class BootScene extends Phaser.Scene {
     for (const npc of ['npc_lume', 'npc_eco', 'npc_raiz']) {
       a.create({ key: `${npc}-idle`, frames: a.generateFrameNumbers(npc, { start: 0, end: 1 }), frameRate: 1.6, repeat: -1 });
     }
+    createSkinAnims(this);
+    // Ruínas (folhas desenhadas em código em gfx/ruins.js)
+    const mk = (key, sheet, frames, rate, repeat = -1) => a.create({ key, frames: a.generateFrameNumbers(sheet, { frames }), frameRate: rate, repeat });
+    mk('pebble-walk', 'pebble', [0, 1, 2, 3], 8);
+    mk('archer-idle', 'archer', [0, 1], 2);
+    mk('squire-walk', 'squire', [0, 1, 2, 3], 6);
+    mk('rknight-idle', 'rknight', [0, 1], 2.5);
+    mk('rknight-walk', 'rknight', [2, 3, 4, 5], 7);
+    mk('tornado-spin', 'tornado', [0, 1, 2, 3, 4, 5], 16);
   }
 }

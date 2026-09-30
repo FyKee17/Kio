@@ -36,7 +36,7 @@ export class Ender extends Phaser.Physics.Arcade.Sprite {
     this.body.setSize(70, 170).setOffset(125, 100);
     this.play('ender-idle');
 
-    this.maxHp = 40;
+    this.maxHp = 200; // 40 golpes de espada
     this.hp = this.maxHp;
     this.alive = true;
     this.contact = false;
@@ -452,11 +452,11 @@ export class Ender extends Phaser.Physics.Arcade.Sprite {
     }
   }
 
-  hit(fromX) {
+  hit(fromX, dir, dmg = 5, opts = {}) {
     if (!this.alive) return false;
-    this.hp--;
-    this.hitLog.push(this.scene.time.now);
-    this.setTintFill(0xffffff);
+    this.hp -= dmg;
+    if (!opts.dot) this.hitLog.push(this.scene.time.now);
+    this.setTintFill(opts.dot ? 0xffb070 : 0xffffff);
     this.scene.time.delayedCall(60, () => this.active && this.state !== 'burst-windup' && this.clearTint());
     this.scene.onBossHit?.(this);
     if (this.state === 'sleep') this.wake();

@@ -44,6 +44,14 @@ export const COMBAT = {
   soulPerHit: 11,
   healCost: 33,
   healMs: 850,
+  nailDamage: 5, // dano do golpe de espada (as habilidades usam a mesma escala)
+};
+
+// Mana das habilidades de elemento: enche devagar com o tempo e batendo.
+export const MANA = {
+  max: 30,
+  regenPerSec: 0.8,
+  perHit: 2,
 };
 
 // Cores da paleta (Ori + Hollow Knight: noite azul, musgo turquesa, flores lilás)
